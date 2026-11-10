@@ -1,0 +1,47 @@
+name: HopeLights
+options:
+  bundleIdPrefix: org.hopejc
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    ARCHS: arm64
+    MACOSX_DEPLOYMENT_TARGET: "26.0"
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+packages:
+  LightsCore:
+    path: Packages/LightsCore
+
+targets:
+  HopeLights:
+    type: application
+    platform: macOS
+    sources:
+      - path: App
+    dependencies:
+      - package: LightsCore
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Hope Lights
+        CFBundleName: Hope Lights
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.utilities
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSHumanReadableCopyright: Hope Church, Johnson City
+        NSLocalNetworkUsageDescription: Hope Lights sends lighting cues to the lights over the network and listens for cues from Screens.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.hopejc.lights
+        PRODUCT_NAME: Hope Lights
+        ENABLE_HARDENED_RUNTIME: YES
+        GENERATE_INFOPLIST_FILE: NO

@@ -1,0 +1,723 @@
+{
+  "cues": [
+    {
+      "fade": 5.0,
+      "id": "walkIn",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.0
+        },
+        "house": {
+          "color": "#FFF1B9",
+          "level": 1.0
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.0
+        },
+        "screenSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "stageSpots": {
+          "level": 0.0
+        },
+        "wallWash": {
+          "color": "#0055FF",
+          "level": 1.0
+        }
+      },
+      "name": "Walk-in",
+      "note": 60,
+      "screensPosition": "walkIn"
+    },
+    {
+      "fade": 5.0,
+      "id": "countdown",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#0055FF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#FF00E5",
+          "level": 0.25
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.0
+        },
+        "house": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.0
+        },
+        "screenSlimpars": {
+          "color": "#FF00E5",
+          "level": 0.25
+        },
+        "stageSpots": {
+          "level": 0.0
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Countdown",
+      "note": 61,
+      "screensPosition": "countdown"
+    },
+    {
+      "fade": 5.0,
+      "id": "song1",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#0055FF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#FF00E5",
+          "level": 0.25
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.75
+        },
+        "house": {
+          "color": "#FFFFFF",
+          "level": 0.05
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.75
+        },
+        "screenSlimpars": {
+          "color": "#FF00E5",
+          "level": 0.25
+        },
+        "stageSpots": {
+          "level": 0.75
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Song 1",
+      "note": 62,
+      "screensPosition": "song1"
+    },
+    {
+      "fade": 5.0,
+      "id": "announcements",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.75
+        },
+        "house": {
+          "color": "#FFFFFF",
+          "level": 0.1
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.75
+        },
+        "screenSlimpars": {
+          "color": "#0055FF",
+          "level": 0.25
+        },
+        "stageSpots": {
+          "level": 0.75
+        },
+        "wallWash": {
+          "color": "#0055FF",
+          "level": 1.0
+        }
+      },
+      "name": "Announcements",
+      "note": 67,
+      "screensPosition": "announcements"
+    },
+    {
+      "fade": 5.0,
+      "id": "song2",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.75
+        },
+        "house": {
+          "color": "#FFFFFF",
+          "level": 0.05
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.75
+        },
+        "screenSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "stageSpots": {
+          "level": 0.75
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Song 2",
+      "note": 63,
+      "screensPosition": "song2"
+    },
+    {
+      "fade": 5.0,
+      "id": "song3",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#00FFDD",
+          "level": 0.25
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.75
+        },
+        "house": {
+          "color": "#FFFFFF",
+          "level": 0.05
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.75
+        },
+        "screenSlimpars": {
+          "color": "#0055FF",
+          "level": 0.25
+        },
+        "stageSpots": {
+          "level": 0.75
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Song 3",
+      "note": 64,
+      "screensPosition": "song3"
+    },
+    {
+      "fade": 5.0,
+      "id": "song4",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#1300FF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.75
+        },
+        "house": {
+          "color": "#FFFFFF",
+          "level": 0.05
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.75
+        },
+        "screenSlimpars": {
+          "color": "#1000FF",
+          "level": 0.25
+        },
+        "stageSpots": {
+          "level": 0.75
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Song 4",
+      "note": 65,
+      "screensPosition": "song4"
+    },
+    {
+      "fade": 5.0,
+      "id": "message",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.1
+        },
+        "floorSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.1
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.5
+        },
+        "house": {
+          "color": "#FFF1B9",
+          "level": 1.0
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.5
+        },
+        "screenSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.1
+        },
+        "stageSpots": {
+          "level": 0.5
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Message",
+      "note": 68,
+      "screensPosition": "message"
+    },
+    {
+      "fade": 5.0,
+      "id": "song5",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.5
+        },
+        "house": {
+          "color": "#FFFFFF",
+          "level": 0.05
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.5
+        },
+        "screenSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "stageSpots": {
+          "level": 0.5
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Song 5",
+      "note": 66,
+      "screensPosition": "song5"
+    },
+    {
+      "fade": 5.0,
+      "id": "closing",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.5
+        },
+        "floorSpots": {
+          "level": 1.0
+        },
+        "frontWash": {
+          "level": 0.25
+        },
+        "house": {
+          "color": "#FFF1B9",
+          "level": 1.0
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.25
+        },
+        "screenSlimpars": {
+          "color": "#0055FF",
+          "level": 0.5
+        },
+        "stageSpots": {
+          "level": 0.0
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Closing",
+      "note": 69,
+      "screensPosition": "closing"
+    },
+    {
+      "fade": 5.0,
+      "id": "walkout",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.5
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.0
+        },
+        "house": {
+          "color": "#FFF1B9",
+          "level": 1.0
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.0
+        },
+        "screenSlimpars": {
+          "color": "#0055FF",
+          "level": 0.5
+        },
+        "stageSpots": {
+          "level": 0.0
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Walk Out",
+      "note": 70,
+      "screensPosition": "walkout"
+    },
+    {
+      "fade": 5.0,
+      "id": "communion",
+      "looks": {
+        "blinders": {
+          "level": 0.01
+        },
+        "ceilingSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.5
+        },
+        "floorSpots": {
+          "level": 0.75
+        },
+        "frontWash": {
+          "level": 0.75
+        },
+        "house": {
+          "color": "#FFFFFF",
+          "level": 0.5
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.75
+        },
+        "screenSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.5
+        },
+        "stageSpots": {
+          "level": 0.75
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Communion",
+      "note": 72,
+      "screensPosition": "communion"
+    },
+    {
+      "fade": 5.0,
+      "id": "baptism",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#0055FF",
+          "level": 0.25
+        },
+        "floorSlimpars": {
+          "color": "#0055FF",
+          "level": 0.5
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.75
+        },
+        "house": {
+          "color": "#FFF1B9",
+          "level": 1.0
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.75
+        },
+        "screenSlimpars": {
+          "color": "#0055FF",
+          "level": 0.5
+        },
+        "stageSpots": {
+          "level": 0.75
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Baptisms",
+      "note": 71,
+      "screensPosition": "baptism"
+    },
+    {
+      "fade": 5.0,
+      "id": "custom:Recognition",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.1
+        },
+        "floorSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.1
+        },
+        "floorSpots": {
+          "level": 1.0
+        },
+        "frontWash": {
+          "level": 0.5
+        },
+        "house": {
+          "color": "#FFF1B9",
+          "level": 1.0
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        },
+        "rearWash": {
+          "level": 0.5
+        },
+        "screenSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.1
+        },
+        "stageSpots": {
+          "level": 0.5
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 1.0
+        }
+      },
+      "name": "Recognition",
+      "note": 73,
+      "screensPosition": "custom:Recognition"
+    },
+    {
+      "fade": 0.0,
+      "id": "blackout",
+      "looks": {
+        "blinders": {
+          "level": 0.0
+        },
+        "ceilingSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.0
+        },
+        "floorSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.0
+        },
+        "floorSpots": {
+          "level": 0.0
+        },
+        "frontWash": {
+          "level": 0.0
+        },
+        "house": {
+          "color": "#FFFFFF",
+          "level": 0.0
+        },
+        "pixelStix": {
+          "color": "#FFFFFF",
+          "level": 0.0
+        },
+        "rearWash": {
+          "level": 0.0
+        },
+        "screenSlimpars": {
+          "color": "#FFFFFF",
+          "level": 0.0
+        },
+        "stageSpots": {
+          "level": 0.0
+        },
+        "wallWash": {
+          "color": "#FFFFFF",
+          "level": 0.0
+        }
+      },
+      "name": "Blackout"
+    }
+  ],
+  "version": 1
+}
