@@ -225,6 +225,20 @@ final class ManualClock: @unchecked Sendable {
         #expect(sink.stopped.isEmpty)
     }
 
+    @Test func nothingGoesOutAfterShutdown() {
+        let sink = RecordingSink()
+        let engine = LightEngine(rig: .hope, sink: sink)
+        engine.go(Show.bundledDefault().cues[0], fade: 0)
+        engine.tick()
+        engine.shutdown()
+        engine.tick()
+        engine.setOutputEnabled(true)
+        engine.tick()
+        engine.shutdown()
+        #expect(sink.frames.count == 1)
+        #expect(sink.stopped.count == 1)
+    }
+
     @Test func turningOutputOffTerminatesTheStream() {
         let sink = RecordingSink()
         let engine = LightEngine(rig: .hope, sink: sink)
@@ -424,5 +438,295 @@ final class ManualClock: @unchecked Sendable {
         #expect(MIDINote.noteOn(ump: 0x209F_3E00) == nil) // velocity 0
         #expect(MIDINote.noteOn(ump: 0x208F_3E7F) == nil) // note-off
         #expect(MIDINote.noteOn(ump: 0x409F_3E7F) == nil) // MIDI 2.0 word
+    }
+
+    @Test func packetsAreReadMessageByMessage() {
+        // A 64-bit MIDI 2.0 message whose second word looks like a MIDI 1.0
+        // note-on, then a real note-on, then SysEx (2 words), then another.
+        let words: [UInt32] = [0x4090_3C00, 0x209F_3E7F, 0x209F_3F7F, 0x3016_0102, 0x209F_407F, 0x209F_417F]
+        let notes = words.withUnsafeBufferPointer { MIDINote.noteOns(in: $0) }
+        #expect(notes.map(\.note) == [63, 65])
+    }
+
+    @Test func channelFilter() {
+        #expect(MIDINote.accepts(channel: 16, listeningOn: 16))
+        #expect(!MIDINote.accepts(channel: 1, listeningOn: 16))
+        #expect(MIDINote.accepts(channel: 1, listeningOn: nil))
+    }
+}
+
+@Suite struct EditingTests {
+    @Test func addCueGoesBeforeBlackoutWithAFreeNote() {
+        var show = Show.bundledDefault()
+        let base = show.cue("song1")
+        let added = show.addCue(basedOn: base)
+        #expect(show.cues.last?.id == "blackout")
+        #expect(show.cues[show.cues.count - 2].id == added.id)
+        #expect(added.note == 74) // 73 is Recognition
+        #expect(added.looks == base?.looks)
+        #expect(added.screensPosition == "custom:New Cue")
+        let second = show.addCue(basedOn: nil)
+        #expect(second.name == "New Cue 2")
+        #expect(second.note == 75)
+    }
+
+    @Test func duplicateGetsItsOwnNameAndNote() throws {
+        var show = Show.bundledDefault()
+        let duplicated = show.duplicate("song1")
+        let copy = try #require(duplicated)
+        let index = try #require(show.cues.firstIndex { $0.id == "song1" })
+        #expect(show.cues[index + 1].id == copy.id)
+        #expect(copy.name == "Song 1 copy")
+        #expect(copy.note != 62)
+        #expect(show.cue(forNote: 62)?.id == "song1")
+        let missing = show.duplicate("nope")
+        #expect(missing == nil)
+    }
+
+    @Test func renameKeepsCustomPositionsInStep() {
+        var show = Show.bundledDefault()
+        show.rename("custom:Recognition", to: "Honors")
+        #expect(show.cue("custom:Recognition")?.screensPosition == "custom:Honors")
+        show.rename("song1", to: "Opener")
+        #expect(show.cue("song1")?.screensPosition == "song1")
+        // Mid-typing, an empty name doesn't leave a "custom:" position behind.
+        show.rename("custom:Recognition", to: "  ")
+        #expect(show.cue("custom:Recognition")?.screensPosition == "custom:Honors")
+    }
+
+    @Test func assigningANoteTakesItFromTheOtherCue() {
+        var show = Show.bundledDefault()
+        show.assign(note: 62, to: "song2")
+        #expect(show.cue("song2")?.note == 62)
+        #expect(show.cue("song1")?.note == nil)
+        #expect(show.cue(forNote: 62)?.id == "song2")
+        show.assign(note: 99, to: "missing")
+        #expect(show.cue(forNote: 99) == nil)
+    }
+
+    @Test func slimparColourLiftsDarkGroups() {
+        var show = Show.bundledDefault()
+        let pink = LightColor(hex: "#FF00E5")!
+        show.setSlimparColor(pink, in: "blackout", rig: .hope)
+        let cue = show.cue("blackout")!
+        for group in Rig.hope.groups where group.isSlimpar {
+            #expect(cue.look(for: group) == GroupLook(color: pink, level: 0.5))
+        }
+        #expect(cue.look(for: Rig.hope.group("house")!).level == 0)
+        show.setSlimparColor(.white, in: "song1", rig: .hope)
+        #expect(show.cue("song1")?.looks["screenSlimpars"]?.level == 0.25)
+    }
+
+    @Test func noteActions() {
+        let show = Show.bundledDefault()
+        #expect(show.action(forNote: 62, learning: nil, followsScreens: true) == .fire(cueID: "song1"))
+        #expect(show.action(forNote: 62, learning: nil, followsScreens: false) == .ignore)
+        #expect(show.action(forNote: 5, learning: nil, followsScreens: true) == .ignore) // a song-section note
+        #expect(show.action(forNote: 62, learning: "song2", followsScreens: true) == .learn(cueID: "song2"))
+        #expect(show.action(forNote: 62, learning: "deleted", followsScreens: true) == .fire(cueID: "song1"))
+    }
+
+    @Test func replaceReportsRealChangesOnly() {
+        var show = Show.bundledDefault()
+        let cue = show.cue("song1")!
+        let same = show.replace(cue)
+        var changed = cue
+        changed.fade = 2
+        let different = show.replace(changed)
+        let unknown = show.replace(Cue(id: "nope", name: "x"))
+        #expect(!same)
+        #expect(different)
+        #expect(!unknown)
+    }
+
+    @Test func theLastCueCantBeDeleted() {
+        var show = Show(cues: [Cue(id: "a", name: "A"), Cue(id: "b", name: "B")])
+        let first = show.delete("a"), last = show.delete("b"), missing = show.delete("missing")
+        #expect(first)
+        #expect(!last)
+        #expect(!missing)
+        #expect(show.cues.map(\.id) == ["b"])
+    }
+
+    @Test func nextFreeNoteWhenTheTopIsFull() {
+        var show = Show.bundledDefault()
+        for note in 73...127 { show.cues.append(Cue(name: "n\(note)", note: note)) }
+        #expect(show.nextFreeNote() == 59)
+    }
+}
+
+@Suite struct FileToleranceTests {
+    @Test func missingFieldsReadAsDefaults() throws {
+        let json = #"{"cues":[{"name":"Bare"},{"id":"x","name":"Odd","fade":-3,"looks":{"house":{"level":4,"color":"nonsense"}}}]}"#
+        let show = try JSONDecoder().decode(Show.self, from: Data(json.utf8))
+        #expect(show.version == 1)
+        #expect(show.cues[0].fade == 5)
+        #expect(show.cues[0].looks.isEmpty)
+        #expect(!show.cues[0].id.isEmpty)
+        #expect(show.cues[1].fade == 0)
+        #expect(show.cues[1].looks["house"] == GroupLook(color: nil, level: 1))
+        #expect(show.cues[1].look(for: Rig.hope.group("house")!).color == .white)
+    }
+
+    @Test func duplicateIDsAreRepaired() throws {
+        let json = #"{"version":1,"cues":[{"id":"a","name":"One"},{"id":"a","name":"Two"},{"id":"","name":"Three"}]}"#
+        let show = try JSONDecoder().decode(Show.self, from: Data(json.utf8)).repaired()
+        #expect(Set(show.cues.map(\.id)).count == 3)
+        #expect(show.cues[0].id == "a")
+    }
+
+    @Test func emptyShowFallsBackToTheDefault() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = ShowStore(folder: folder)
+        try store.save(Show(cues: []))
+        #expect(store.load() == Show.bundledDefault())
+    }
+
+    @Test func previousShowIsKept() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = ShowStore(folder: folder)
+        _ = store.load() // nothing saved yet: no backup
+        #expect(!FileManager.default.fileExists(atPath: store.previousURL.path))
+        var show = Show.bundledDefault()
+        try store.save(show)
+        _ = store.load()
+        show.cues[0].name = "Changed"
+        try store.save(show)
+        let previous = try JSONDecoder().decode(Show.self, from: Data(contentsOf: store.previousURL))
+        #expect(previous.cues[0].name == "Walk-in")
+        // A bad file at the next launch leaves the good backup alone.
+        try Data("{".utf8).write(to: store.showURL)
+        _ = store.load()
+        let still = try JSONDecoder().decode(Show.self, from: Data(contentsOf: store.previousURL))
+        #expect(still.cues[0].name == "Walk-in")
+    }
+
+    @Test func unusedImagesAreRemoved() throws {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let store = ShowStore(folder: folder)
+        let image = PaletteTests().image { _, _ in (10, 200, 30) }
+        let kept = try store.storeImage(image)
+        let dropped = try store.storeImage(image)
+        let inBackup = try store.storeImage(image)
+        var backup = Show.bundledDefault()
+        backup.cues[1].image = inBackup
+        try JSONEncoder().encode(backup).write(to: store.previousURL)
+        var show = Show.bundledDefault()
+        show.cues[0].image = kept
+        store.removeUnusedImages(keeping: show)
+        #expect(FileManager.default.fileExists(atPath: store.imageURL(kept).path))
+        #expect(FileManager.default.fileExists(atPath: store.imageURL(inBackup).path))
+        #expect(!FileManager.default.fileExists(atPath: store.imageURL(dropped).path))
+    }
+
+    @Test func notAPictureGivesNil() async throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".png")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try Data("not a png".utf8).write(to: url)
+        #expect(await ImagePalette.picture(at: url) == nil)
+        #expect(await ImagePalette.picture(at: URL(fileURLWithPath: "/nonexistent/x.mov")) == nil)
+    }
+
+    @Test func hugePicturesAreScaledDown() throws {
+        let side = 4000
+        let space = CGColorSpace(name: CGColorSpace.sRGB)!
+        let context = CGContext(data: nil, width: side, height: side / 2, bitsPerComponent: 8, bytesPerRow: 0,
+                                space: space, bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue)!
+        context.setFillColor(red: 0, green: 0.3, blue: 1, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: side, height: side / 2))
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".png")
+        defer { try? FileManager.default.removeItem(at: url) }
+        let destination = CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil)!
+        CGImageDestinationAddImage(destination, context.makeImage()!, nil)
+        #expect(CGImageDestinationFinalize(destination))
+        let image = try #require(ImagePalette.cgImage(at: url))
+        #expect(max(image.width, image.height) == 1280)
+        #expect(ImagePalette.colors(in: image).first?.blue == 1)
+    }
+}
+
+@Suite struct ChannelTests {
+    @Test func everyKindFillsItsFootprint() {
+        for kind in FixtureKind.allCases {
+            for level in [0.0, 0.5, 1.0] {
+                #expect(kind.channels(color: LightColor(hex: "#12AB34")!, level: level).count == kind.footprint, "\(kind)")
+            }
+        }
+    }
+
+    @Test func levelsOutOfRangeAreClamped() {
+        #expect(FixtureKind.proWashPlus.channels(color: .white, level: 7) == [255])
+        #expect(FixtureKind.proWashPlus.channels(color: .white, level: -1) == [0])
+    }
+
+    /// Strobe, macro and program channels stay at their off values in every cue,
+    /// so no cue can set a SlimPAR strobing or running a built-in program.
+    @Test func specialChannelsStayOff() {
+        for cue in Show.bundledDefault().cues {
+            let frame = Renderer.frame(for: cue, rig: .hope)
+            for fixture in Rig.hope.fixtures {
+                let ch = frame.channels(of: fixture)
+                switch fixture.kind {
+                case .slimParProH: #expect(ch[6...].allSatisfy { $0 == 0 }, "\(cue.name) \(fixture.name)")
+                case .pixelStixDriver: #expect(ch[1...].allSatisfy { $0 == 0 })
+                case .eveE50Z: #expect(ch[1...].allSatisfy { $0 == 0 })
+                default: break
+                }
+            }
+        }
+    }
+}
+
+@Suite struct StressTests {
+    /// Cues, edits, output toggles and ticks from many threads at once, the
+    /// way MIDI, the UI and the timer meet in the app. Run under
+    /// `--sanitize=thread` to catch races.
+    @Test func engineSurvivesConcurrentUse() async {
+        let sink = RecordingSink()
+        let engine = LightEngine(rig: .hope, sink: LockedSink(sink))
+        let cues = Show.bundledDefault().cues
+        await withTaskGroup(of: Void.self) { group in
+            for worker in 0..<8 {
+                group.addTask {
+                    for i in 0..<300 {
+                        let cue = cues[(i + worker) % cues.count]
+                        switch (i + worker) % 5 {
+                        case 0: engine.go(cue, fade: 0.01)
+                        case 1: engine.update(cue)
+                        case 2: engine.tick()
+                        case 3: _ = engine.currentFrame()
+                        default: engine.setOutputEnabled(i % 2 == 0)
+                        }
+                    }
+                }
+            }
+        }
+        engine.setOutputEnabled(true)
+        engine.go(cues[0], fade: 0)
+        #expect(engine.currentFrame() == Renderer.frame(for: cues[0], rig: .hope))
+    }
+}
+
+/// RecordingSink isn't thread-safe; the stress test needs one that is.
+final class LockedSink: FrameSink, @unchecked Sendable {
+    private let lock = NSLock()
+    private let inner: RecordingSink
+    init(_ inner: RecordingSink) { self.inner = inner }
+    func send(_ frame: DMXFrame) { lock.withLock { inner.send(frame) } }
+    func stop(universes: [Int]) { lock.withLock { inner.stop(universes: universes) } }
+}
+
+@Suite struct GlowTests {
+    @Test func glowsAreTheColoursOnInTheRoom() {
+        let show = Show.bundledDefault()
+        let song1 = show.cue("song1")!.glows(in: .hope)
+        #expect(song1.contains(Glow(color: LightColor(hex: "#FF00E5")!, level: 0.25)))
+        #expect(song1.contains(Glow(color: LightColor(hex: "#0055FF")!, level: 0.25)))
+        // White is on in several groups; it counts once, at the brightest.
+        #expect(song1.filter { $0.color == .white }.map(\.level) == [1])
+        #expect(show.cue("blackout")!.glows(in: .hope).isEmpty)
     }
 }

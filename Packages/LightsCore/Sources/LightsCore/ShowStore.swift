@@ -18,13 +18,22 @@ public struct ShowStore: Sendable {
     }
 
     public var showURL: URL { folder.appendingPathComponent("Show.json") }
+    /// The show as it was when the app last opened: one step back if a
+    /// session's edits go wrong.
+    public var previousURL: URL { folder.appendingPathComponent("Show-previous.json") }
     public var imagesFolder: URL { folder.appendingPathComponent("Images", isDirectory: true) }
 
     /// The saved show, or the bundled one on a new install. A file that won't
     /// read is kept aside rather than overwritten, so nothing is lost.
     public func load() -> Show {
         guard let data = try? Data(contentsOf: showURL) else { return .bundledDefault() }
-        if let show = try? JSONDecoder().decode(Show.self, from: data) { return show }
+        if let show = try? JSONDecoder().decode(Show.self, from: data), !show.cues.isEmpty {
+            // Only a file that reads becomes the backup; a bad one copied
+            // over it would lose the last good show.
+            try? FileManager.default.removeItem(at: previousURL)
+            try? FileManager.default.copyItem(at: showURL, to: previousURL)
+            return show.repaired()
+        }
         let aside = folder.appendingPathComponent("Show-unreadable-\(Int(Date().timeIntervalSince1970)).json")
         try? FileManager.default.moveItem(at: showURL, to: aside)
         return .bundledDefault()
@@ -62,11 +71,16 @@ public struct ShowStore: Sendable {
 
     public func imageURL(_ name: String) -> URL { imagesFolder.appendingPathComponent(name) }
 
-    /// Deletes pictures no cue points at any more.
+    /// Deletes pictures no cue points at any more, in this show or in the
+    /// backup and set-aside copies beside it, so restoring one of those
+    /// brings its pictures back too.
     public func removeUnusedImages(keeping show: Show) {
         let used = Set(show.cues.compactMap(\.image))
+        let others = ((try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? [])
+            .filter { $0.hasPrefix("Show-") && $0.hasSuffix(".json") }
+            .compactMap { try? String(contentsOf: folder.appendingPathComponent($0), encoding: .utf8) }
         let files = (try? FileManager.default.contentsOfDirectory(atPath: imagesFolder.path)) ?? []
-        for file in files where !used.contains(file) {
+        for file in files where !used.contains(file) && !others.contains(where: { $0.contains(file) }) {
             try? FileManager.default.removeItem(at: imagesFolder.appendingPathComponent(file))
         }
     }
@@ -84,5 +98,32 @@ public enum MIDINote {
         let velocity = word & 0x7F
         guard status & 0xF0 == 0x90, velocity > 0 else { return nil }
         return (Int(status & 0x0F) + 1, note)
+    }
+
+    /// Words in a UMP message, from its type (the first word's top nibble).
+    static func messageSize(_ word: UInt32) -> Int {
+        switch word >> 28 {
+        case 0x0, 0x1, 0x2, 0x6, 0x7: 1
+        case 0x3, 0x4, 0x8, 0x9, 0xA: 2
+        case 0xB, 0xC: 3
+        default: 4 // 0x5, 0xD, 0xE, 0xF
+        }
+    }
+
+    /// The note-ons in a packet's words, reading message by message so a
+    /// data word inside a longer message is never taken for a note.
+    public static func noteOns(in words: UnsafeBufferPointer<UInt32>) -> [(channel: Int, note: Int)] {
+        var result: [(channel: Int, note: Int)] = []
+        var i = 0
+        while i < words.count {
+            if let n = noteOn(ump: words[i]) { result.append(n) }
+            i += messageSize(words[i])
+        }
+        return result
+    }
+
+    /// Whether a note's channel is one this app listens on (nil: any).
+    public static func accepts(channel: Int, listeningOn wanted: Int?) -> Bool {
+        wanted == nil || wanted == channel
     }
 }

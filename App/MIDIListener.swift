@@ -84,14 +84,13 @@ final class MIDIListener: @unchecked Sendable {
     private func receive(_ list: UnsafePointer<MIDIEventList>, source: MIDIEndpointRef?) {
         let sourceName = source.map(Self.name(of:)) ?? "Hope Lights"
         for packet in list.unsafeSequence() {
-            let count = Int(packet.pointee.wordCount)
-            withUnsafeBytes(of: packet.pointee.words) { raw in
-                let words = raw.bindMemory(to: UInt32.self)
-                for i in 0..<min(count, words.count) {
-                    if let message = MIDINote.noteOn(ump: words[i]) {
-                        onNote(message.channel, message.note, sourceName)
-                    }
-                }
+            // Only the packet's own words: packets in a list are packed, so
+            // copying the whole 64-word `words` tuple reads past the end.
+            let count = min(Int(packet.pointee.wordCount), 64)
+            let offset = MemoryLayout<MIDIEventPacket>.offset(of: \.words) ?? 12
+            let start = UnsafeRawPointer(packet).advanced(by: offset).assumingMemoryBound(to: UInt32.self)
+            for message in MIDINote.noteOns(in: UnsafeBufferPointer(start: start, count: count)) {
+                onNote(message.channel, message.note, sourceName)
             }
         }
     }

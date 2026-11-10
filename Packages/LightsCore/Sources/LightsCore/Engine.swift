@@ -94,6 +94,11 @@ public final class LightEngine: @unchecked Sendable {
     private let sink: FrameSink
     private let clock: @Sendable () -> TimeInterval
     private let lock = NSLock()
+    /// Held across deciding to send and sending, so a frame can never go
+    /// out after the stop packets: a frame after them would make the nodes
+    /// take this Mac back just as another console takes over.
+    private let outputLock = NSLock()
+    private var stopped = false
     private let queue = DispatchQueue(label: "org.hopejc.lights.engine", qos: .userInteractive)
     private var timer: DispatchSourceTimer?
 
@@ -137,9 +142,9 @@ public final class LightEngine: @unchecked Sendable {
 
     /// An edit to a cue. Only the live cue reaches the lights.
     public func update(_ cue: Cue) {
-        guard liveCueID == cue.id else { return }
         let target = Renderer.frame(for: cue, rig: rig)
         lock.withLock {
+            guard _liveCueID == cue.id else { return }
             let now = clock()
             // Mid-fade, keep the fade's end time so an edit doesn't cut a
             // five-second fade short; otherwise follow the edit quickly.
@@ -149,18 +154,23 @@ public final class LightEngine: @unchecked Sendable {
     }
 
     public func setOutputEnabled(_ enabled: Bool) {
-        let wasEnabled = lock.withLock {
-            let was = outputEnabled
-            outputEnabled = enabled
-            return was
+        outputLock.withLock {
+            let (wasSending, hadCue) = lock.withLock {
+                let was = outputEnabled
+                outputEnabled = enabled
+                return (was, hasCue)
+            }
+            if wasSending && !enabled && hadCue && !stopped { sink.stop(universes: rig.universes) }
         }
-        if wasEnabled && !enabled && lock.withLock({ hasCue }) { sink.stop(universes: rig.universes) }
     }
 
     /// One tick of output; the timer calls this, tests call it directly.
     public func tick() {
-        let (frame, sending) = lock.withLock { (fade.frame(at: clock()), outputEnabled && hasCue) }
-        if sending { sink.send(frame) }
+        outputLock.withLock {
+            guard !stopped else { return }
+            let (frame, sending) = lock.withLock { (fade.frame(at: clock()), outputEnabled && hasCue) }
+            if sending { sink.send(frame) }
+        }
     }
 
     public func start() {
@@ -172,9 +182,14 @@ public final class LightEngine: @unchecked Sendable {
         self.timer = timer
     }
 
+    /// Stops for good: no frame goes out after this returns.
     public func shutdown() {
         timer?.cancel()
         timer = nil
-        if lock.withLock({ outputEnabled && hasCue }) { sink.stop(universes: rig.universes) }
+        outputLock.withLock {
+            guard !stopped else { return }
+            stopped = true
+            if lock.withLock({ outputEnabled && hasCue }) { sink.stop(universes: rig.universes) }
+        }
     }
 }

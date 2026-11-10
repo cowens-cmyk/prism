@@ -13,6 +13,12 @@ public struct GroupLook: Codable, Hashable, Sendable {
     }
 
     public static let off = GroupLook(level: 0)
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        color = try? c.decodeIfPresent(LightColor.self, forKey: .color)
+        level = min(max(try c.decodeIfPresent(Double.self, forKey: .level) ?? 0, 0), 1)
+    }
 }
 
 public struct Cue: Codable, Hashable, Identifiable, Sendable {
@@ -45,6 +51,20 @@ public struct Cue: Codable, Hashable, Identifiable, Sendable {
         self.palette = palette
     }
 
+    /// A cue missing a field reads with its default rather than failing the
+    /// whole show: a hand-edited or older file still opens.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString
+        name = try c.decodeIfPresent(String.self, forKey: .name) ?? "Cue"
+        screensPosition = try c.decodeIfPresent(String.self, forKey: .screensPosition)
+        note = try c.decodeIfPresent(Int.self, forKey: .note)
+        fade = max(try c.decodeIfPresent(Double.self, forKey: .fade) ?? 5, 0)
+        looks = (try? c.decodeIfPresent([String: GroupLook].self, forKey: .looks)) ?? [:]
+        image = try c.decodeIfPresent(String.self, forKey: .image)
+        palette = try? c.decodeIfPresent([LightColor].self, forKey: .palette)
+    }
+
     /// A group the cue doesn't mention is off, and white if it takes colour,
     /// so a new group added to the rig starts dark in every old cue.
     public func look(for group: LightGroup) -> GroupLook {
@@ -67,6 +87,12 @@ public struct Show: Codable, Sendable, Equatable {
     public init(version: Int = 1, cues: [Cue]) {
         self.version = version
         self.cues = cues
+    }
+
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        version = try c.decodeIfPresent(Int.self, forKey: .version) ?? 1
+        cues = try c.decode([Cue].self, forKey: .cues)
     }
 
     /// The show imported from the church's Lightkey project, which a new

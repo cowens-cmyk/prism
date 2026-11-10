@@ -7,22 +7,30 @@ struct ContentView: View {
     var body: some View {
         NavigationSplitView {
             CueListView(model: model)
-                .navigationSplitViewColumnWidth(min: 220, ideal: 260)
+                .navigationSplitViewColumnWidth(min: 230, ideal: 270)
         } detail: {
-            VStack(spacing: 0) {
-                if !model.otherSources.isEmpty {
-                    ConflictBanner(sources: model.otherSources)
-                }
-                if let error = model.saveError {
-                    Banner(text: error, color: .red)
-                }
+            ZStack(alignment: .top) {
                 if let cue = model.cue(model.selectedCueID) {
                     CueEditorView(model: model, cue: cue)
                         .id(cue.id)
                 } else {
-                    ContentUnavailableView("No cue selected", systemImage: "lightbulb")
+                    ContentUnavailableView("No cue selected", systemImage: "lightbulb.max")
                 }
+                VStack(spacing: 8) {
+                    if !model.otherSources.isEmpty {
+                        let names = model.otherSources.map(\.name).joined(separator: ", ")
+                        Banner(text: "\(names) is also sending to the lights. Quit it so the two don't fight.", tint: .orange)
+                    }
+                    if let error = model.saveError {
+                        Banner(text: error, tint: .red)
+                    }
+                }
+                .padding(.top, 8)
+                .animation(.spring(duration: 0.35), value: model.otherSources)
             }
+        }
+        .containerBackground(for: .window) {
+            AmbientBackground(glows: model.ambientGlows, fade: model.ambientFade)
         }
         .toolbar {
             ToolbarItem(placement: .status) {
@@ -38,36 +46,23 @@ struct ContentView: View {
                 .disabled(model.blackoutCue == nil)
             }
         }
+        .tint(Theme.accent)
+        .preferredColorScheme(model.colorScheme)
     }
 }
 
-/// Two consoles on the same lights flicker between each other's looks.
-struct ConflictBanner: View {
-    var sources: [SACNMonitor.Source]
-
-    var body: some View {
-        let names = sources.map(\.name).joined(separator: ", ")
-        Banner(
-            text: "\(names) is also sending to the lights. Quit it so the two don't fight.",
-            color: .orange)
-    }
-}
-
+/// A warning floating over the editor in tinted glass.
 struct Banner: View {
     var text: String
-    var color: Color
+    var tint: Color
 
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-            Text(text)
-            Spacer()
-        }
-        .font(.callout.weight(.medium))
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(color.opacity(0.18))
-        .foregroundStyle(color == .orange ? Color.primary : color)
+        Label(text, systemImage: "exclamationmark.triangle.fill")
+            .font(.callout.weight(.semibold))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .glassEffect(.regular.tint(tint.opacity(0.5)), in: .capsule)
+            .transition(.move(edge: .top).combined(with: .opacity))
     }
 }
 
@@ -75,7 +70,7 @@ struct OutputStatus: View {
     var model: AppModel
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 16) {
             Label(output.text, systemImage: "dot.radiowaves.left.and.right")
                 .foregroundStyle(output.ok ? Color.secondary : Color.orange)
             Label(screens, systemImage: "rectangle.on.rectangle")
@@ -83,6 +78,7 @@ struct OutputStatus: View {
         }
         .labelStyle(.titleAndIcon)
         .font(.callout)
+        .padding(.horizontal, 8)
     }
 
     private var output: (text: String, ok: Bool) {

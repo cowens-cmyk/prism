@@ -2,6 +2,7 @@ import AppKit
 import Foundation
 import LightsCore
 import Observation
+import SwiftUI
 
 @MainActor
 @Observable
@@ -12,8 +13,19 @@ final class AppModel {
     private(set) var show: Show
     var selectedCueID: String?
     private(set) var liveCueID: String?
-    /// The cue waiting for its note from Screens.
-    var learningCueID: String?
+    /// The cue waiting for its note from Screens. Learn gives up after 30
+    /// seconds: left on, it would take the next note of the service.
+    var learningCueID: String? {
+        didSet {
+            learnTimeout?.cancel()
+            guard learningCueID != nil else { return }
+            learnTimeout = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: .seconds(30))
+                if !Task.isCancelled { self?.learningCueID = nil }
+            }
+        }
+    }
+    private var learnTimeout: Task<Void, Never>?
     private(set) var lastNote: (note: Int, source: String, at: Date)?
     private(set) var midiStatus = MIDIListener.Status()
     /// Anything else sending sACN to our universes, Lightkey most likely.
@@ -26,10 +38,25 @@ final class AppModel {
     /// "all", or one interface name ("en0").
     var networkChoice: String { didSet { defaults.set(networkChoice, forKey: "network"); applyNetwork() } }
     /// Node IPs for sACN unicast, comma separated. Empty: multicast only.
+    /// Set from Settings when the field is committed, not per keystroke: typing
+    /// 10.0.0.150 shouldn't send to 10.0.0.1 and 10.0.0.15 on the way.
     var unicastText: String { didSet { defaults.set(unicastText, forKey: "unicast"); applyNetwork() } }
+    /// The channel Screens sends on (its Lightkey & MIDI setting, 16 by
+    /// default); 0 takes any. A keyboard on another channel playing middle C
+    /// must not fire Walk-in.
+    var midiChannel: Int { didSet { defaults.set(midiChannel, forKey: "midiChannel") } }
     var listensToAllMIDI: Bool { didSet { defaults.set(listensToAllMIDI, forKey: "allMIDI"); midi.setListensToEverything(listensToAllMIDI) } }
     /// Off: Screens' notes are ignored and only clicks change the lights.
     var followsScreens: Bool { didSet { defaults.set(followsScreens, forKey: "followScreens") } }
+    /// "dark" (the default), "light" or "system".
+    var appearance: String { didSet { defaults.set(appearance, forKey: "appearance") } }
+    var colorScheme: ColorScheme? {
+        switch appearance {
+        case "light": .light
+        case "system": nil
+        default: .dark
+        }
+    }
     var outputEnabled: Bool { didSet { defaults.set(outputEnabled, forKey: "output"); engine.setOutputEnabled(outputEnabled) } }
 
     private let defaults = UserDefaults.standard
@@ -41,9 +68,11 @@ final class AppModel {
     private var activity: NSObjectProtocol?
 
     init() {
-        defaults.register(defaults: ["network": "all", "followScreens": true, "output": true])
+        defaults.register(defaults: ["network": "all", "followScreens": true, "output": true, "appearance": "dark"])
+        appearance = defaults.string(forKey: "appearance") ?? "dark"
         networkChoice = defaults.string(forKey: "network") ?? "all"
         unicastText = defaults.string(forKey: "unicast") ?? ""
+        midiChannel = defaults.object(forKey: "midiChannel") as? Int ?? 16
         listensToAllMIDI = defaults.bool(forKey: "allMIDI")
         followsScreens = defaults.bool(forKey: "followScreens")
         outputEnabled = defaults.bool(forKey: "output")
@@ -61,7 +90,8 @@ final class AppModel {
         }
         midi = MIDIListener(
             onNote: { [weak self] channel, note, source in
-                Task { @MainActor in self?.handle(note: note, channel: channel, source: source) }
+                // The main queue keeps notes in the order they arrived.
+                DispatchQueue.main.async { self?.handle(note: note, channel: channel, source: source) }
             },
             onStatus: { [weak self] status in
                 Task { @MainActor in self?.midiStatus = status }
@@ -94,9 +124,19 @@ final class AppModel {
 
     // MARK: Cues
 
-    func cue(_ id: String?) -> Cue? { show.cues.first { $0.id == id } }
+    func cue(_ id: String?) -> Cue? { show.cue(id) }
 
-    var blackoutCue: Cue? { show.cues.first { $0.id == "blackout" } }
+    var blackoutCue: Cue? { show.cue("blackout") }
+
+    /// What the window's background glows with: the colours in the room.
+    /// Nothing up, nothing lit.
+    var ambientGlows: [Glow] {
+        guard outputEnabled, let live = cue(liveCueID) else { return [] }
+        return live.glows(in: rig)
+    }
+
+    /// How long the background takes to follow: the live cue's fade.
+    var ambientFade: Double { cue(liveCueID)?.fade ?? 1.5 }
 
     func go(_ cue: Cue, fade: TimeInterval? = nil) {
         engine.go(cue, fade: fade)
@@ -108,126 +148,133 @@ final class AppModel {
         if let cue = cue(id) { go(cue) }
     }
 
-    /// Every edit comes through here: saved shortly after, and shown in the
-    /// room at once if the cue is live.
-    func update(_ cue: Cue) {
-        guard let index = show.cues.firstIndex(where: { $0.id == cue.id }), show.cues[index] != cue else { return }
-        show.cues[index] = cue
-        engine.update(cue)
+    /// Every change to the show comes through here: saved shortly after, and
+    /// shown in the room at once when it touches the live cue.
+    private func edit(_ change: (inout Show) -> Void) {
+        var next = show
+        change(&next)
+        guard next != show else { return }
+        let liveBefore = show.cue(liveCueID)
+        show = next
+        if let live = show.cue(liveCueID), live != liveBefore { engine.update(live) }
         scheduleSave()
     }
 
+    func update(_ cue: Cue) { edit { $0.replace(cue) } }
+
+    func rename(_ id: String, to name: String) { edit { $0.rename(id, to: name) } }
+
+    func clearNote(of id: String) {
+        edit { show in
+            guard var cue = show.cue(id) else { return }
+            cue.note = nil
+            show.replace(cue)
+        }
+    }
+
+    /// Starts from the selected cue's look, usually the nearest thing to
+    /// what's wanted.
     func addCue() {
-        let name = uniqueName("New Cue")
-        // Starts from the selected cue's look, which is usually the nearest
-        // thing to what's wanted.
-        let base = cue(selectedCueID)
-        let cue = Cue(
-            name: name, screensPosition: "custom:\(name)", note: nextFreeNote(),
-            fade: base?.fade ?? 5, looks: base?.looks ?? [:])
-        let at = show.cues.firstIndex { $0.id == "blackout" } ?? show.cues.endIndex
-        show.cues.insert(cue, at: at)
-        selectedCueID = cue.id
-        scheduleSave()
+        var added: Cue?
+        edit { added = $0.addCue(basedOn: $0.cue(selectedCueID)) }
+        selectedCueID = added?.id ?? selectedCueID
     }
 
-    func duplicate(_ cue: Cue) {
-        var copy = cue
-        copy.id = UUID().uuidString
-        copy.name = uniqueName(cue.name + " copy")
-        copy.screensPosition = "custom:\(copy.name)"
-        copy.note = nextFreeNote()
-        let at = (show.cues.firstIndex { $0.id == cue.id } ?? show.cues.endIndex - 1) + 1
-        show.cues.insert(copy, at: at)
-        selectedCueID = copy.id
-        scheduleSave()
+    func duplicate(_ id: String) {
+        var copy: Cue?
+        edit { copy = $0.duplicate(id) }
+        if let copy { selectedCueID = copy.id }
     }
 
-    func delete(_ cue: Cue) {
-        show.cues.removeAll { $0.id == cue.id }
-        if selectedCueID == cue.id { selectedCueID = show.cues.first?.id }
-        scheduleSave()
+    /// The live cue stays: deleting it would leave the room on a look no
+    /// longer in the list.
+    func delete(_ id: String) {
+        guard id != liveCueID, show.cues.count > 1 else { return }
+        if learningCueID == id { learningCueID = nil }
+        let index = show.cues.firstIndex { $0.id == id }
+        edit { $0.delete(id) }
+        if selectedCueID == id, let index {
+            selectedCueID = show.cues[min(index, show.cues.count - 1)].id
+        }
         store.removeUnusedImages(keeping: show)
     }
 
     func move(from source: IndexSet, to destination: Int) {
-        show.cues.move(fromOffsets: source, toOffset: destination)
-        scheduleSave()
+        edit { $0.cues.move(fromOffsets: source, toOffset: destination) }
     }
 
     /// Puts the cues back to the ones imported from Lightkey.
     func resetShow() {
-        show = .bundledDefault()
-        selectedCueID = show.cues.first?.id
-        scheduleSave()
+        learningCueID = nil
+        edit { $0 = .bundledDefault() }
+        if cue(selectedCueID) == nil { selectedCueID = show.cues.first?.id }
         store.removeUnusedImages(keeping: show)
-        if let live = cue(liveCueID) { engine.update(live) }
-    }
-
-    private func uniqueName(_ base: String) -> String {
-        var name = base, n = 2
-        while show.cues.contains(where: { $0.name == name }) { name = "\(base) \(n)"; n += 1 }
-        return name
-    }
-
-    /// Screens gives an added row the lowest free note above its defaults.
-    private func nextFreeNote() -> Int {
-        let used = Set(show.cues.compactMap(\.note))
-        return (73...127).first { !used.contains($0) } ?? 127
     }
 
     // MARK: Colour helpers
 
-    func setSlimparColor(_ color: LightColor, in cue: Cue) {
-        var cue = cue
-        for group in rig.groups where group.isSlimpar {
-            var look = cue.look(for: group)
-            look.color = color
-            // A dark SlimPAR wouldn't show the colour it was just given.
-            if look.level == 0 { look.level = 0.5 }
-            cue.set(look, for: group)
-        }
-        update(cue)
+    func setSlimparColor(_ color: LightColor, in cueID: String) {
+        edit { $0.setSlimparColor(color, in: cueID, rig: rig) }
     }
+
+    /// A message under the picture box: a file that isn't a picture, or one
+    /// that couldn't be read.
+    private(set) var pictureMessage: (cueID: String, text: String)?
 
     /// A picture or video dropped on a cue: its colours go on the cue, the
     /// strongest on every SlimPAR group.
     func applyPicture(at url: URL, to cueID: String) async {
-        guard let image = await ImagePalette.picture(at: url) else { return }
-        guard var cue = cue(cueID) else { return }
+        pictureMessage = nil
+        guard let image = await ImagePalette.picture(at: url) else {
+            pictureMessage = (cueID, "Couldn't read “\(url.lastPathComponent)” as a picture or video.")
+            return
+        }
         let palette = ImagePalette.colors(in: image)
-        cue.image = try? store.storeImage(image)
-        cue.palette = palette
-        update(cue)
-        if let first = palette.first, let updated = self.cue(cueID) { setSlimparColor(first, in: updated) }
+        let stored = try? store.storeImage(image)
+        edit { show in
+            guard var cue = show.cue(cueID) else { return }
+            cue.image = stored
+            cue.palette = palette
+            show.replace(cue)
+            if let first = palette.first { show.setSlimparColor(first, in: cueID, rig: rig) }
+        }
         store.removeUnusedImages(keeping: show)
     }
 
-    func clearPicture(of cue: Cue) {
-        var cue = cue
-        cue.image = nil
-        cue.palette = nil
-        update(cue)
+    /// Decoded once per picture, not on every redraw while a slider moves.
+    @ObservationIgnored private let thumbnails = NSCache<NSString, NSImage>()
+
+    func thumbnail(_ name: String) -> NSImage? {
+        if let cached = thumbnails.object(forKey: name as NSString) { return cached }
+        guard let image = NSImage(contentsOf: store.imageURL(name)) else { return nil }
+        thumbnails.setObject(image, forKey: name as NSString)
+        return image
+    }
+
+    func clearPicture(of cueID: String) {
+        edit { show in
+            guard var cue = show.cue(cueID) else { return }
+            cue.image = nil
+            cue.palette = nil
+            show.replace(cue)
+        }
         store.removeUnusedImages(keeping: show)
     }
 
     // MARK: Screens
 
     private func handle(note: Int, channel: Int, source: String) {
+        guard MIDINote.accepts(channel: channel, listeningOn: midiChannel == 0 ? nil : midiChannel) else { return }
         lastNote = (note, source, Date())
-        if let learning = learningCueID, var cue = cue(learning) {
-            // A note belongs to one cue; the one it came from lets go of it.
-            for var other in show.cues where other.note == note && other.id != cue.id {
-                other.note = nil
-                update(other)
-            }
-            cue.note = note
-            update(cue)
+        switch show.action(forNote: note, learning: learningCueID, followsScreens: followsScreens) {
+        case .learn(let id):
+            edit { $0.assign(note: note, to: id) }
             learningCueID = nil
-            return
+        case .fire(let id):
+            go(id: id)
+        case .ignore:
+            if learningCueID != nil { learningCueID = nil }
         }
-        guard followsScreens, let cue = show.cue(forNote: note) else { return }
-        go(cue)
     }
 
     // MARK: Network

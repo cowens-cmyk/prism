@@ -93,15 +93,17 @@ public struct NetworkInterface: Hashable, Sendable, Identifiable {
         var result: [NetworkInterface] = []
         for entry in sequence(first: first, next: { $0.pointee.ifa_next }) {
             let flags = Int32(entry.pointee.ifa_flags)
+            // VPN tunnels (point-to-point) never reach a lighting node.
             guard let sa = entry.pointee.ifa_addr, sa.pointee.sa_family == UInt8(AF_INET),
-                  flags & IFF_UP != 0, flags & IFF_LOOPBACK == 0
+                  flags & IFF_UP != 0, flags & IFF_RUNNING != 0, flags & IFF_MULTICAST != 0,
+                  flags & IFF_LOOPBACK == 0, flags & IFF_POINTOPOINT == 0
             else { continue }
             var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
             guard getnameinfo(sa, socklen_t(sa.pointee.sa_len), &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST) == 0
             else { continue }
             let address = String(decoding: host.prefix { $0 != 0 }.map { UInt8(bitPattern: $0) }, as: UTF8.self)
-            // Self-assigned addresses are a cable with nothing at the end.
-            if address.hasPrefix("169.254.") { continue }
+            // Self-assigned (169.254) addresses stay: a lighting switch with
+            // no DHCP server is exactly where the Mac gets one.
             result.append(NetworkInterface(name: String(validatingCString: entry.pointee.ifa_name) ?? "", address: address))
         }
         return result
@@ -274,8 +276,13 @@ public final class SACNMonitor: @unchecked Sendable {
                     setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &request, socklen_t(MemoryLayout<ip_mreq>.size))
                 }
             }
-            let reader = DispatchSource.makeReadSource(fileDescriptor: fd, queue: queue)
-            reader.setEventHandler { [weak self] in self?.receive() }
+            let socketFD = fd
+            let reader = DispatchSource.makeReadSource(fileDescriptor: socketFD, queue: queue)
+            reader.setEventHandler { [weak self] in self?.receive(from: socketFD) }
+            // The socket closes only once the source has let go of it;
+            // closing it first can hand the number to a new socket that the
+            // old source then reads.
+            reader.setCancelHandler { close(socketFD) }
             reader.resume()
             self.reader = reader
             let pruner = DispatchSource.makeTimerSource(queue: queue)
@@ -289,29 +296,36 @@ public final class SACNMonitor: @unchecked Sendable {
     public func stop() { queue.async { [self] in stopLocked() } }
 
     private func stopLocked() {
-        reader?.cancel()
+        if let reader {
+            reader.cancel()
+        } else if fd >= 0 {
+            close(fd)
+        }
         reader = nil
         pruner?.cancel()
         pruner = nil
-        if fd >= 0 { close(fd) }
         fd = -1
         seen = [:]
     }
 
-    private func receive() {
+    /// Reads whatever is waiting, a packet at a time.
+    private func receive(from socketFD: Int32) {
         var buffer = [UInt8](repeating: 0, count: 1024)
-        let count = recv(fd, &buffer, buffer.count, 0)
-        guard count > 0, let header = SACNPacket.parse(Array(buffer[0..<count])),
-              header.cid != ownCID, universes.contains(header.universe)
-        else { return }
-        if header.terminated {
-            seen[header.cid] = nil
-        } else {
-            var entry = seen[header.cid] ?? (header.sourceName, [], 0)
-            entry.name = header.sourceName
-            entry.universes.insert(header.universe)
-            entry.last = ProcessInfo.processInfo.systemUptime
-            seen[header.cid] = entry
+        for _ in 0..<64 {
+            let count = recv(socketFD, &buffer, buffer.count, MSG_DONTWAIT)
+            guard count > 0 else { return }
+            guard let header = SACNPacket.parse(Array(buffer[0..<count])),
+                  header.cid != ownCID, universes.contains(header.universe)
+            else { continue }
+            if header.terminated {
+                seen[header.cid] = nil
+            } else {
+                var entry = seen[header.cid] ?? (header.sourceName, [], 0)
+                entry.name = header.sourceName
+                entry.universes.insert(header.universe)
+                entry.last = ProcessInfo.processInfo.systemUptime
+                seen[header.cid] = entry
+            }
         }
     }
 

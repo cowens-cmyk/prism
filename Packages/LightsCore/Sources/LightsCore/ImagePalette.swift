@@ -75,6 +75,7 @@ public enum ImagePalette {
         if type?.conforms(to: .movie) == true || type?.conforms(to: .video) == true {
             let generator = AVAssetImageGenerator(asset: AVURLAsset(url: url))
             generator.appliesPreferredTrackTransform = true
+            generator.maximumSize = CGSize(width: maxSide, height: maxSide)
             for seconds in [1.0, 0] {
                 if let image = try? await generator.image(at: CMTime(seconds: seconds, preferredTimescale: 600)).image {
                     return image
@@ -85,10 +86,19 @@ public enum ImagePalette {
         return cgImage(at: url)
     }
 
-    /// The first frame of any image macOS can read.
+    /// Big enough for the thumbnail, small enough that a 6K photo or a 4K
+    /// video frame doesn't stall the app.
+    static let maxSide = 1280
+
+    /// The first frame of any image macOS can read, at most `maxSide` across,
+    /// the right way up.
     public static func cgImage(at url: URL) -> CGImage? {
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
-        return CGImageSourceCreateImageAtIndex(source, 0, nil)
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil), CGImageSourceGetCount(source) > 0 else { return nil }
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxSide,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+        ] as CFDictionary)
     }
 
     static func hue(_ r: Double, _ g: Double, _ b: Double) -> Double {

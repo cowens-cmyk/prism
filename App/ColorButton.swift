@@ -5,6 +5,7 @@ import SwiftUI
 /// and the system picker for anything else.
 struct ColorButton: View {
     var color: LightColor
+    var level: Double = 1
     var showsAllSlimpars: Bool
     var set: (LightColor) -> Void
     var setAllSlimpars: (LightColor) -> Void
@@ -14,14 +15,12 @@ struct ColorButton: View {
         Button {
             open = true
         } label: {
-            HStack(spacing: 6) {
-                SwatchDot(color: color, size: 20)
-                Text(Swatch.all.first { $0.color == color }?.name ?? color.hex)
-                    .monospacedDigit()
-                    .frame(width: 84, alignment: .leading)
-            }
+            Orb(color: color, level: level, size: 30)
+                .frame(width: 34, height: 34)
+                .contentShape(Circle())
         }
-        .buttonStyle(.borderless)
+        .buttonStyle(.plain)
+        .help("Colour: \(Swatch.all.first { $0.color == color }?.name ?? color.hex)")
         .popover(isPresented: $open, arrowEdge: .bottom) {
             ColorPanel(color: color, showsAllSlimpars: showsAllSlimpars, set: set, setAllSlimpars: setAllSlimpars)
         }
@@ -58,7 +57,9 @@ struct ColorPanel: View {
                     Button {
                         choose(swatch.color)
                     } label: {
-                        SwatchDot(color: swatch.color, size: 30, selected: swatch.color == color)
+                        Orb(color: swatch.color, size: 28)
+                            .overlay(Circle().strokeBorder(.white, lineWidth: swatch.color == color ? 2.5 : 0).padding(-4))
+                            .frame(width: 34, height: 34)
                     }
                     .buttonStyle(.plain)
                     .help(swatch.name)
@@ -86,15 +87,22 @@ struct ColorPanel: View {
                 Spacer()
                 ColorPicker("More", selection: $picked, supportsOpacity: false)
                     .onChange(of: picked) { _, new in
-                        if let rgb = LightColor(new), rgb != color { choose(rgb) }
+                        // Compared as hex: the trip through NSColor can move a channel by
+                        // a hair, which isn't a change anyone made.
+                        if let rgb = LightColor(new), rgb.hex != color.hex { choose(rgb) }
                     }
             }
             if showsAllSlimpars {
-                Button("Use on all SlimPARs") { setAllSlimpars(color) }
+                Button {
+                    setAllSlimpars(color)
+                } label: {
+                    Label("Use on all SlimPARs", systemImage: "light.recessed.3")
+                }
+                .buttonStyle(.glass)
             }
         }
-        .padding(16)
-        .frame(width: 330)
+        .padding(18)
+        .frame(width: 340)
         .onAppear {
             hex = color.hex
             picked = Color(color)
@@ -107,21 +115,9 @@ struct ColorPanel: View {
     }
 
     private func applyHex() {
-        guard let parsed = LightColor(hex: hex), parsed != color else { return }
+        // By hex: opening the picker sets the box to the current colour, and
+        // that mustn't count as an edit when the colour isn't exact 8-bit.
+        guard let parsed = LightColor(hex: hex), parsed.hex != color.hex else { return }
         set(parsed)
-    }
-}
-
-struct SwatchDot: View {
-    var color: LightColor
-    var size: CGFloat
-    var selected = false
-
-    var body: some View {
-        Circle()
-            .fill(Color(color))
-            .overlay(Circle().strokeBorder(.secondary.opacity(0.5), lineWidth: 0.5))
-            .overlay(Circle().strokeBorder(Color.accentColor, lineWidth: selected ? 2.5 : 0).padding(-3))
-            .frame(width: size, height: size)
     }
 }

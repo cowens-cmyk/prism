@@ -12,9 +12,9 @@ struct CueListView: View {
                     .tag(cue.id)
                     .contextMenu {
                         Button("Go") { model.go(cue) }
-                        Button("Duplicate") { model.duplicate(cue) }
+                        Button("Duplicate") { model.duplicate(cue.id) }
                         Divider()
-                        Button("Delete", role: .destructive) { model.delete(cue) }
+                        Button("Delete", role: .destructive) { model.delete(cue.id) }
                             .disabled(model.liveCueID == cue.id)
                     }
             }
@@ -27,11 +27,10 @@ struct CueListView: View {
                 } label: {
                     Label("Add Cue", systemImage: "plus")
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.glass)
                 Spacer()
             }
-            .padding(10)
-            .background(.bar)
+            .padding(12)
         }
     }
 }
@@ -42,40 +41,44 @@ struct CueRow: View {
     @State private var dropTargeted = false
 
     var body: some View {
-        HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(cue.name)
-                    .font(.body.weight(isLive ? .semibold : .regular))
-                HStack(spacing: 3) {
-                    ForEach(model.rig.groups.filter(\.isSlimpar)) { group in
-                        let look = cue.look(for: group)
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    if isLive {
                         Circle()
-                            .fill(Color(look.color ?? .white).opacity(look.level > 0 ? 1 : 0.2))
-                            .overlay(Circle().strokeBorder(.secondary.opacity(0.4), lineWidth: 0.5))
-                            .frame(width: 9, height: 9)
+                            .fill(Theme.live)
+                            .frame(width: 7, height: 7)
+                            .shadow(color: Theme.live, radius: 4)
                     }
+                    Text(cue.name.trimmingCharacters(in: .whitespaces).isEmpty ? "Untitled cue" : cue.name)
+                        .font(.system(.body, design: .rounded).weight(isLive ? .bold : .medium))
+                        .lineLimit(1)
                 }
+                ColorStrip(colors: cue.colors(in: model.rig), height: 4)
+                    .frame(maxWidth: 120)
             }
-            Spacer()
-            if isLive {
-                Text("LIVE")
-                    .font(.caption2.weight(.bold))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Capsule().fill(.green))
-                    .foregroundStyle(.white)
+            Spacer(minLength: 4)
+            if let note = cue.note {
+                Text("\(note)")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.tertiary)
+                    .help("Screens sends note \(note) for this cue")
             }
             Button {
                 model.go(cue)
             } label: {
                 Image(systemName: "play.fill")
+                    .font(.caption)
+                    .frame(width: 22, height: 22)
             }
-            .buttonStyle(.borderless)
+            .buttonStyle(.glass)
+            .buttonBorderShape(.circle)
+            .tint(isLive ? Theme.live : nil)
             .help("Go to \(cue.name)")
         }
-        .padding(.vertical, 3)
+        .padding(.vertical, 5)
         .contentShape(Rectangle())
-        .listRowBackground(dropTargeted ? Color.accentColor.opacity(0.25) : nil)
+        .listRowBackground(dropTargeted ? Theme.accent.opacity(0.3) : nil)
         .onDrop(of: PictureDrop.types, isTargeted: $dropTargeted) { providers in
             PictureDrop.load(providers) { url in
                 await model.applyPicture(at: url, to: cue.id)
