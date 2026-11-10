@@ -36,6 +36,9 @@ public struct Cue: Codable, Hashable, Identifiable, Sendable {
     /// folder, and the colours found in it.
     public var image: String?
     public var palette: [LightColor]?
+    /// Whether the SlimPARs take their colour from Screens' background when
+    /// Screens starts this cue. nil: the default, on for songs only.
+    public var matchesScreens: Bool?
 
     public init(
         id: String = UUID().uuidString, name: String, screensPosition: String? = nil, note: Int? = nil,
@@ -63,6 +66,26 @@ public struct Cue: Codable, Hashable, Identifiable, Sendable {
         looks = (try? c.decodeIfPresent([String: GroupLook].self, forKey: .looks)) ?? [:]
         image = try c.decodeIfPresent(String.self, forKey: .image)
         palette = try? c.decodeIfPresent([LightColor].self, forKey: .palette)
+        matchesScreens = try? c.decodeIfPresent(Bool.self, forKey: .matchesScreens)
+    }
+
+    /// Screens' song positions: song1, song2…
+    public var isSong: Bool { screensPosition?.hasPrefix("song") == true }
+
+    /// Songs match Screens' background unless turned off; walk-in, message
+    /// and the rest keep their own colours unless turned on.
+    public var followsScreensBackground: Bool { matchesScreens ?? isSong }
+
+    /// This cue with every SlimPAR group in one colour, levels as they are:
+    /// a SlimPAR the cue keeps dark stays dark.
+    public func withSlimparColor(_ color: LightColor, rig: Rig) -> Cue {
+        var cue = self
+        for group in rig.groups where group.isSlimpar {
+            var look = cue.look(for: group)
+            look.color = color
+            cue.set(look, for: group)
+        }
+        return cue
     }
 
     /// A group the cue doesn't mention is off, and white if it takes colour,

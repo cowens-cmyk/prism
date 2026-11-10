@@ -18,10 +18,21 @@ moves.
   a video) on a cue, in the list or on the Picture box. The SlimPARs take its
   strongest colour, and the colours found in it appear beside the picture;
   click another one to use it instead.
+- **Songs match Screens:** when Screens starts a song, the SlimPARs take
+  the colour of that song's background (a motion background's frame
+  included) at the levels the cue sets. It isn't saved into the cue, since
+  next week's song has another background; **Keep This Colour** saves it.
+  It's on for the Song cues and off for the rest; the switch under "Colour
+  from a slide" changes that per cue. Needs Screens' Local API (see below).
 - **Fade:** how long the cue takes to come up from whatever was showing.
 - **Blackout:** the moon button in the toolbar (⇧⌘B).
 - **Add Cue** starts a copy of the selected cue's look. Right-click a cue to
   duplicate or delete it, and drag cues to reorder them.
+
+The window is dark grey, lit by a gradient of the colours on in the room,
+and fades with the lights. Settings › Look switches to light.
+
+Quitting while a cue is up asks first.
 
 Lightkey must be closed while Hope Lights runs. Two programs sending to the
 same lights make them flicker between the two. If the app hears another
@@ -44,9 +55,24 @@ gets 73. Hope Lights uses the same notes, so in Screens:
    Settings › Screens.
 3. Turn on **Change Lightkey scenes with the service**.
 4. Use **Add Cue…** to add a **Recognition** row.
+5. Hope Lights listens on MIDI channel 16, Screens' default; Settings ›
+   Screens › MIDI channel changes it. Notes on other channels are ignored,
+   so a keyboard on the network can't fire Walk-in.
 
-A cue's note shows under its name. **Learn** sets it from the next note that
-arrives (press Send on that row in Screens). Songs past Song 5 use the
+For songs to match their backgrounds, Hope Lights reads the live
+background from Screens' Local API (`GET /v1/show/frames/background`, added
+in the Screens branch `lights-background-frame`):
+
+1. In Screens: **Settings › Integrations › Remote & API**, turn it on.
+2. **Manage Keys…**, create a **Watch** key named Hope Lights.
+3. In Hope Lights: **Settings › Songs match Screens' background**, enter the
+   Screens Mac (`127.0.0.1` on the same Mac, otherwise its address or
+   `name.local`) and the key, and press **Check**. The key is kept in the
+   keychain.
+
+A cue's note shows beside it in the list. **Learn** sets it from the next
+note that arrives (press Send on that row in Screens); it gives up after 30
+seconds. Songs past Song 5 use the
 Song 5 cue; Screens does that itself.
 
 ## The rig
@@ -95,4 +121,6 @@ is generated from the Lightkey project:
 python3 -I tools/import-lightkey.py "Hope NEW - FINAL copy.lightkeyproj" > Packages/LightsCore/Sources/LightsCore/Resources/DefaultShow.json
 ```
 
-The running show is saved in `~/Library/Application Support/Hope Lights/`.
+The running show is saved in `~/Library/Application Support/Hope Lights/`,
+with `Show-previous.json` as it was when the app last opened. A show file
+that won't read is set aside as `Show-unreadable-….json`, not overwritten.

@@ -6,6 +6,9 @@ struct SettingsView: View {
     @Bindable var model: AppModel
     @State private var confirmReset = false
     @State private var unicastDraft = ""
+    @State private var hostDraft = ""
+    @State private var keyDraft = ""
+    @State private var checkResult: String?
     @FocusState private var unicastFocused: Bool
 
     var body: some View {
@@ -56,6 +59,34 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+            Section("Songs match Screens' background") {
+                TextField("Screens Mac", text: $hostDraft, prompt: Text("127.0.0.1 or booth-mac.local"))
+                    .onSubmit { model.screensHost = hostDraft }
+                SecureField("Access key", text: $keyDraft)
+                    .onSubmit { model.screensKey = keyDraft }
+                HStack {
+                    Button("Check") {
+                        model.screensHost = hostDraft
+                        model.screensKey = keyDraft
+                        checkResult = "Checking…"
+                        Task {
+                            let result = await model.screensAPI.check()
+                            checkResult = switch result {
+                            case .success: "Connected to Screens."
+                            case .failure(let failure): failure.message
+                            }
+                        }
+                    }
+                    if let checkResult {
+                        Text(checkResult)
+                            .font(.callout)
+                            .foregroundStyle(checkResult == "Connected to Screens." ? .green : .secondary)
+                    }
+                }
+                Text("In Screens: Settings › Integrations › Remote & API. Turn it on, then Manage Keys… and create a Watch key for Hope Lights. Use 127.0.0.1 when Screens runs on this Mac.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             Section("Show") {
                 Button("Start Over from the Lightkey Cues…") { confirmReset = true }
                     .confirmationDialog(
@@ -73,8 +104,16 @@ struct SettingsView: View {
                 }
             }
         }
-        .onAppear { unicastDraft = model.unicastText }
-        .onDisappear { model.unicastText = unicastDraft }
+        .onAppear {
+            unicastDraft = model.unicastText
+            hostDraft = model.screensHost
+            keyDraft = model.screensKey
+        }
+        .onDisappear {
+            model.unicastText = unicastDraft
+            model.screensHost = hostDraft
+            model.screensKey = keyDraft
+        }
         .formStyle(.grouped)
         .scrollContentBackground(.hidden)
         .background(AmbientBackground(glows: model.ambientGlows, fade: model.ambientFade))

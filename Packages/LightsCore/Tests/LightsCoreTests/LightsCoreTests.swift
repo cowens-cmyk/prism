@@ -730,3 +730,111 @@ final class LockedSink: FrameSink, @unchecked Sendable {
         #expect(show.cue("blackout")!.glows(in: .hope).isEmpty)
     }
 }
+
+import Network
+
+/// A stand-in for Screens' Local API on 127.0.0.1: answers each request
+/// with the status and body it's given, and records what was asked.
+final class FakeScreens: @unchecked Sendable {
+    private let listener: NWListener
+    private let lock = NSLock()
+    private var requests: [String] = []
+    var status = 200
+    var body = Data()
+    var port: Int { Int(listener.port?.rawValue ?? 0) }
+
+    init() throws {
+        let parameters = NWParameters.tcp
+        parameters.requiredLocalEndpoint = NWEndpoint.hostPort(host: "127.0.0.1", port: .any)
+        listener = try NWListener(using: parameters)
+        listener.newConnectionHandler = { [weak self] connection in
+            connection.start(queue: .global())
+            connection.receive(minimumIncompleteLength: 1, maximumLength: 8192) { data, _, _, _ in
+                guard let self else { return }
+                let text = String(decoding: data ?? Data(), as: UTF8.self)
+                let (status, body) = self.lock.withLock { () -> (Int, Data) in
+                    self.requests.append(text)
+                    return (self.status, self.body)
+                }
+                var response = Data("HTTP/1.1 \(status) X\r\nContent-Length: \(body.count)\r\nConnection: close\r\n\r\n".utf8)
+                response.append(body)
+                connection.send(content: response, completion: .contentProcessed { _ in connection.cancel() })
+            }
+        }
+        let ready = DispatchSemaphore(value: 0)
+        listener.stateUpdateHandler = { if case .ready = $0 { ready.signal() } }
+        listener.start(queue: .global())
+        _ = ready.wait(timeout: .now() + 2)
+    }
+
+    deinit { listener.cancel() }
+
+    var lastRequest: String { lock.withLock { requests.last ?? "" } }
+}
+
+@Suite(.serialized) struct ScreensAPITests {
+    func jpeg(_ rgb: (UInt8, UInt8, UInt8)) -> Data {
+        let image = PaletteTests().image { _, _ in rgb }
+        let data = NSMutableData()
+        let destination = CGImageDestinationCreateWithData(data, UTType.jpeg.identifier as CFString, 1, nil)!
+        CGImageDestinationAddImage(destination, image, nil)
+        CGImageDestinationFinalize(destination)
+        return data as Data
+    }
+
+    @Test func fetchesTheBackgroundWithTheKey() async throws {
+        let screens = try FakeScreens()
+        screens.body = jpeg((200, 20, 160))
+        let api = ScreensAPI(host: "127.0.0.1", port: screens.port, key: " abc123 ")
+        let image = try await api.background().get()
+        #expect(ImagePalette.colors(in: image).first?.red == 1)
+        #expect(screens.lastRequest.hasPrefix("GET /v1/show/frames/background HTTP/1.1"))
+        #expect(screens.lastRequest.contains("Authorization: Bearer abc123"))
+    }
+
+    @Test func failuresSayWhatWentWrong() async throws {
+        let screens = try FakeScreens()
+        let api = ScreensAPI(host: "127.0.0.1", port: screens.port, key: "k")
+        screens.status = 401
+        #expect(await api.background().failure == .refused)
+        screens.status = 404
+        #expect(await api.background().failure == .noBackground)
+        screens.status = 200
+        screens.body = Data("not a jpeg".utf8)
+        #expect(await api.background().failure == .unreadable)
+        #expect(await api.check().failure == nil)
+        #expect(await ScreensAPI(host: "", key: "k").check().failure == .notSetUp)
+        #expect(await ScreensAPI(host: "127.0.0.1", port: 1, key: "k").check().failure == .unreachable)
+    }
+
+    @Test func ipv6HostsGetBrackets() {
+        #expect(ScreensAPI(host: "fe80::1", key: "k").url("/v1/status")?.absoluteString == "http://[fe80::1]:6980/v1/status")
+        #expect(ScreensAPI(host: "booth.local", key: "k").url("/x")?.absoluteString == "http://booth.local:6980/x")
+    }
+
+    @Test func songsMatchByDefault() {
+        let show = Show.bundledDefault()
+        #expect(show.cue("song1")!.followsScreensBackground)
+        #expect(show.cue("song5")!.followsScreensBackground)
+        for id in ["walkIn", "countdown", "announcements", "message", "walkout", "blackout"] {
+            #expect(!show.cue(id)!.followsScreensBackground, "\(id)")
+        }
+        var message = show.cue("message")!
+        message.matchesScreens = true
+        #expect(message.followsScreensBackground)
+    }
+
+    @Test func matchingKeepsLevels() {
+        let song1 = Show.bundledDefault().cue("song1")!
+        let gold = LightColor(hex: "#FFB000")!
+        let matched = song1.withSlimparColor(gold, rig: .hope)
+        for group in Rig.hope.groups where group.isSlimpar {
+            #expect(matched.look(for: group) == GroupLook(color: gold, level: song1.look(for: group).level))
+        }
+        #expect(matched.looks["house"] == song1.looks["house"])
+    }
+}
+
+extension Result {
+    var failure: Failure? { if case .failure(let f) = self { f } else { nil } }
+}

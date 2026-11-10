@@ -175,7 +175,9 @@ struct PictureCard: View {
     @State private var targeted = false
 
     var body: some View {
-        GlassCard(title: "Match a slide", systemImage: "photo.on.rectangle.angled") {
+        GlassCard(title: "Colour from a slide", systemImage: "photo.on.rectangle.angled") {
+            screensMatch
+            Divider().opacity(0.4)
             HStack(alignment: .center, spacing: 18) {
                 dropZone
                 VStack(alignment: .leading, spacing: 12) {
@@ -218,6 +220,44 @@ struct PictureCard: View {
         }
         .onDrop(of: PictureDrop.types, isTargeted: $targeted) { providers in
             PictureDrop.load(providers) { url in await model.applyPicture(at: url, to: cue.id) }
+        }
+    }
+
+    /// Songs follow Screens' background by themselves; this turns it off,
+    /// or on for any other cue.
+    @ViewBuilder private var screensMatch: some View {
+        let follows = model.cue(cue.id)?.followsScreensBackground ?? false
+        Toggle(isOn: Binding(
+            get: { follows },
+            set: { on in
+                guard var current = model.cue(cue.id) else { return }
+                current.matchesScreens = on
+                model.update(current)
+            })) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Match Screens' background")
+                    .font(.body.weight(.medium))
+                Text("When Screens starts this cue, the SlimPARs take the colour of the song's background. The levels stay as set here.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .toggleStyle(.switch)
+        if model.liveCueID == cue.id, let color = model.screensColor {
+            HStack(spacing: 10) {
+                Orb(color: color, size: 22)
+                Text("Matching Screens now: \(color.hex)")
+                    .font(.callout)
+                Spacer()
+                Button("Keep This Colour") { model.keepScreensColor() }
+                    .buttonStyle(.glass)
+                    .help("Save it into the cue, so it stays when Screens' background changes")
+            }
+        } else if follows, model.liveCueID == cue.id, let problem = model.screensProblem {
+            Label(problem, systemImage: "exclamationmark.triangle.fill")
+                .font(.callout)
+                .foregroundStyle(.orange)
         }
     }
 

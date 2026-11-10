@@ -34,7 +34,10 @@ user-facing text is short, plain and factual.
   black out the room.
 - Intensity merges highest-wins when importing Lightkey cues (see the
   importer's docstring); reading presets last-wins leaves the songs dark.
-- `Show.version` stays 1; new cue fields are optional.
+- `Show.version` stays 1; new cue fields are optional and decode
+  leniently (`Cue.init(from:)`).
+- Screens' colour on a matched song (`AppModel.screensColor`) is never
+  written into the cue unless the operator presses Keep This Colour.
 
 ## Build and test
 
@@ -46,9 +49,15 @@ swift test --package-path Packages/LightsCore --scratch-path /tmp/hl-core
 xcodegen generate && xcodebuild -project HopeLights.xcodeproj -scheme HopeLights -derivedDataPath /tmp/hl-dd build
 ```
 
-Keep derived data outside ~/Desktop (iCloud breaks codesign). Debug builds
-open the first SlimPAR colour picker by themselves with `HL_OPEN_COLOR=1`,
-for screenshots without UI scripting.
+Keep derived data outside ~/Desktop (iCloud breaks codesign). UI scripting
+isn't allowed on the dev Mac, so Debug builds take launch switches for
+screenshots and tests: `HL_OPEN_COLOR=1` opens the first SlimPAR colour
+picker, `HL_WINDOW=1300x1000` sizes the window, `HL_SCREENS_KEY=…` sets the
+Screens key without the keychain. Quitting asks first while a cue is up, so
+a test harness stops the app with `pkill -x "Hope Lights"`.
+
+Song matching needs Screens' `GET /v1/show/frames/background` (Screens
+branch `lights-background-frame`, `LocalAPIBridgeAdapter.liveBackgroundJPEG`).
 
 Docs stay current: a change to behaviour, the rig or the Screens hookup
 updates `README.md` in the same commit.

@@ -73,6 +73,13 @@ final class AppModel {
         networkChoice = defaults.string(forKey: "network") ?? "all"
         unicastText = defaults.string(forKey: "unicast") ?? ""
         midiChannel = defaults.object(forKey: "midiChannel") as? Int ?? 16
+        screensHost = defaults.string(forKey: "screensHost") ?? "127.0.0.1"
+        screensPort = defaults.object(forKey: "screensPort") as? Int ?? ScreensAPI.defaultPort
+        screensKey = Keychain.read()
+        #if DEBUG
+        // Tests against a stand-in Screens without touching the keychain.
+        if let key = ProcessInfo.processInfo.environment["HL_SCREENS_KEY"] { screensKey = key }
+        #endif
         listensToAllMIDI = defaults.bool(forKey: "allMIDI")
         followsScreens = defaults.bool(forKey: "followScreens")
         outputEnabled = defaults.bool(forKey: "output")
@@ -131,7 +138,7 @@ final class AppModel {
     /// What the window's background glows with: the colours in the room.
     /// Nothing up, nothing lit.
     var ambientGlows: [Glow] {
-        guard outputEnabled, let live = cue(liveCueID) else { return [] }
+        guard outputEnabled, let live = liveLook else { return [] }
         return live.glows(in: rig)
     }
 
@@ -139,6 +146,8 @@ final class AppModel {
     var ambientFade: Double { cue(liveCueID)?.fade ?? 1.5 }
 
     func go(_ cue: Cue, fade: TimeInterval? = nil) {
+        matchTask?.cancel()
+        screensColor = nil
         engine.go(cue, fade: fade)
         liveCueID = cue.id
         defaults.set(cue.id, forKey: "liveCue")
@@ -156,7 +165,15 @@ final class AppModel {
         guard next != show else { return }
         let liveBefore = show.cue(liveCueID)
         show = next
-        if let live = show.cue(liveCueID), live != liveBefore { engine.update(live) }
+        if let live = show.cue(liveCueID), live != liveBefore {
+            // Picking a SlimPAR colour by hand on the live cue wins over the
+            // one matched from Screens.
+            let slimpars = rig.groups.filter(\.isSlimpar)
+            if let liveBefore, slimpars.contains(where: { live.look(for: $0).color != liveBefore.look(for: $0).color }) {
+                screensColor = nil
+            }
+            if let look = liveLook { engine.update(look) }
+        }
         scheduleSave()
     }
 
@@ -272,9 +289,74 @@ final class AppModel {
             learningCueID = nil
         case .fire(let id):
             go(id: id)
+            if cue(id)?.followsScreensBackground == true { matchScreensBackground(for: id) }
         case .ignore:
             if learningCueID != nil { learningCueID = nil }
         }
+    }
+
+    // MARK: Screens' background
+
+    /// Screens' Mac and access key, for matching songs to their backgrounds.
+    var screensHost: String { didSet { defaults.set(screensHost, forKey: "screensHost") } }
+    var screensPort: Int { didSet { defaults.set(screensPort, forKey: "screensPort") } }
+    var screensKey: String { didSet { Keychain.write(screensKey) } }
+    var screensAPI: ScreensAPI { ScreensAPI(host: screensHost, port: screensPort, key: screensKey) }
+
+    /// The colour the live cue's SlimPARs took from Screens, if they did.
+    /// It isn't saved into the cue: next week's song has another background.
+    private(set) var screensColor: LightColor?
+    /// The last time matching didn't work, for the editor and Settings.
+    private(set) var screensProblem: String?
+    @ObservationIgnored private var matchTask: Task<Void, Never>?
+
+    /// The live cue as it is in the room: with Screens' colour when matched.
+    var liveLook: Cue? {
+        guard let live = cue(liveCueID) else { return nil }
+        guard let color = screensColor else { return live }
+        return live.withSlimparColor(color, rig: rig)
+    }
+
+    /// Screens sends the note as the item goes live; its background can land
+    /// a moment later, so this asks a few times before giving up. The colour
+    /// joins the cue's fade already under way rather than starting a new one.
+    func matchScreensBackground(for cueID: String) {
+        matchTask?.cancel()
+        let api = screensAPI
+        guard api.isSetUp else { return }
+        matchTask = Task { @MainActor [weak self] in
+            var lastFailure: ScreensAPI.Failure = .noBackground
+            attempts: for delay in [0.15, 0.35, 0.6, 1.0] {
+                try? await Task.sleep(for: .seconds(delay))
+                guard !Task.isCancelled else { return }
+                switch await api.background() {
+                case .success(let image):
+                    guard let self, !Task.isCancelled, self.liveCueID == cueID,
+                          let color = ImagePalette.colors(in: image).first
+                    else { return }
+                    self.screensColor = color
+                    self.screensProblem = nil
+                    if let look = self.liveLook { self.engine.update(look) }
+                    return
+                case .failure(let failure):
+                    lastFailure = failure
+                    // A wrong key or address won't fix itself in a second.
+                    if failure != .noBackground && failure != .unreachable { break attempts }
+                }
+            }
+            guard let self, !Task.isCancelled else { return }
+            self.screensProblem = lastFailure.message
+        }
+    }
+
+    /// Writes the matched colour into the cue, for a song that should keep it.
+    func keepScreensColor() {
+        guard let color = screensColor, let id = liveCueID else { return }
+        edit { show in
+            guard let cue = show.cue(id) else { return }
+            show.replace(cue.withSlimparColor(color, rig: rig))
+        }
+        screensColor = nil
     }
 
     // MARK: Network
