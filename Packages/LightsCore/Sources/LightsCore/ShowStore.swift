@@ -3,7 +3,7 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-/// The show on disk: ~/Library/Application Support/Hope Lights/Show.json,
+/// The show on disk: ~/Library/Application Support/Prism/Show.json,
 /// with dropped pictures in Images/ beside it.
 public struct ShowStore: Sendable {
     public var folder: URL
@@ -14,7 +14,7 @@ public struct ShowStore: Sendable {
 
     public static var standard: ShowStore {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return ShowStore(folder: support.appendingPathComponent("Hope Lights", isDirectory: true))
+        return ShowStore(folder: support.appendingPathComponent("Prism", isDirectory: true))
     }
 
     public var showURL: URL { folder.appendingPathComponent("Show.json") }

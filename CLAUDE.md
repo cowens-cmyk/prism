@@ -1,4 +1,4 @@
-# Hope Lights
+# Prism
 
 The church's Mac lighting app, replacing Lightkey. Read `README.md` for what
 it does and the rig. The church's operator doesn't want lighting jargon:
@@ -22,14 +22,14 @@ user-facing text is short, plain and factual.
 - **Never send sACN multicast from a test on a Mac that may be on the
   church's lighting network** — it changes the real lights. Test the app
   with Settings › Network set to a name that doesn't exist and unicast
-  `127.0.0.1` (`defaults write org.hopejc.lights network -string none;
-  defaults write org.hopejc.lights unicast -string 127.0.0.1`), and listen
+  `127.0.0.1` (`defaults write org.hopejc.prism network -string none;
+  defaults write org.hopejc.prism unicast -string 127.0.0.1`), and listen
   on 127.0.0.1:5568.
 - The patch in `Rig.hope` matches the Lightkey project. The tests check the
   addresses; a change in the room changes both.
 - Default notes follow Screens' `LightingCueTable.defaults`
   (`mxu-slides-main/apps/mac/Packages/PresenterCore/.../ServicePosition.swift`).
-  Screens is the authority on notes; Hope Lights follows it.
+  Screens is the authority on notes; Prism follows it.
 - Nothing is sent until a cue has been fired. Opening the app must never
   black out the room.
 - Intensity merges highest-wins when importing Lightkey cues (see the
@@ -46,7 +46,7 @@ swift test --package-path Packages/LightsCore --scratch-path /tmp/hl-core
 ```
 
 ```bash
-xcodegen generate && xcodebuild -project HopeLights.xcodeproj -scheme HopeLights -derivedDataPath /tmp/hl-dd build
+xcodegen generate && xcodebuild -project Prism.xcodeproj -scheme Prism -derivedDataPath /tmp/hl-dd build
 ```
 
 Keep derived data outside ~/Desktop (iCloud breaks codesign). UI scripting
@@ -54,10 +54,18 @@ isn't allowed on the dev Mac, so Debug builds take launch switches for
 screenshots and tests: `HL_OPEN_COLOR=1` opens the first SlimPAR colour
 picker, `HL_WINDOW=1300x1000` sizes the window, `HL_SCREENS_KEY=…` sets the
 Screens key without the keychain. Quitting asks first while a cue is up, so
-a test harness stops the app with `pkill -x "Hope Lights"`.
+a test harness stops the app with `pkill -x "Prism"`.
 
 Song matching needs Screens' `GET /v1/show/frames/background` (Screens
 after 0.27.0, `LocalAPIBridgeAdapter.liveBackgroundJPEG`).
+
+To test against the real Screens without touching the church library or
+your phone-remote key, run Screens' Debug build with
+`SCREENS_LIBRARY_ROOT=<empty folder> MXU_SKIP_KEYCHAIN=1` and
+`-localAPI.enabled YES -lightkey.followService YES`, seed
+`<folder>/local-api-tokens.json` with keys (salt hex + "$" +
+sha256(salt + secret)), and drive it through `/mcp` and `/v1/show/slide`.
+Export Screens' defaults first and put them back after.
 
 Docs stay current: a change to behaviour, the rig or the Screens hookup
 updates `README.md` in the same commit.

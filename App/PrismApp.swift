@@ -3,11 +3,11 @@ import LightsCore
 import SwiftUI
 
 @main
-struct HopeLightsApp: App {
+struct PrismApp: App {
     @NSApplicationDelegateAdaptor private var delegate: AppDelegate
 
     var body: some Scene {
-        Window("Hope Lights", id: "main") {
+        Window("Prism", id: "main") {
             ContentView(model: delegate.model)
                 .frame(minWidth: 900, minHeight: 600)
         }
@@ -53,7 +53,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         guard model.liveCueID != nil, model.outputEnabled, !Self.systemIsGoingDown() else { return .terminateNow }
         let alert = NSAlert()
-        alert.messageText = "Quit Hope Lights?"
+        alert.messageText = "Quit Prism?"
         alert.informativeText = "The lights stop getting cues from this Mac."
         alert.addButton(withTitle: "Quit")
         alert.addButton(withTitle: "Cancel")

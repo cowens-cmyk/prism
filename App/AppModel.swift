@@ -331,9 +331,13 @@ final class AppModel {
                 guard !Task.isCancelled else { return }
                 switch await api.background() {
                 case .success(let image):
-                    guard let self, !Task.isCancelled, self.liveCueID == cueID,
-                          let color = ImagePalette.colors(in: image).first
-                    else { return }
+                    guard let self, !Task.isCancelled, self.liveCueID == cueID else { return }
+                    // A dark or black-and-white background leaves the cue's
+                    // own colour up, rather than turning the SlimPARs white.
+                    guard let color = ImagePalette.vividColors(in: image).first else {
+                        self.screensProblem = nil
+                        return
+                    }
                     self.screensColor = color
                     self.screensProblem = nil
                     if let look = self.liveLook { self.engine.update(look) }

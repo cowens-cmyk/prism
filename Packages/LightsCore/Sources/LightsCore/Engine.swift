@@ -99,7 +99,7 @@ public final class LightEngine: @unchecked Sendable {
     /// take this Mac back just as another console takes over.
     private let outputLock = NSLock()
     private var stopped = false
-    private let queue = DispatchQueue(label: "org.hopejc.lights.engine", qos: .userInteractive)
+    private let queue = DispatchQueue(label: "org.hopejc.prism.engine", qos: .userInteractive)
     private var timer: DispatchSourceTimer?
 
     private var fade: Crossfade

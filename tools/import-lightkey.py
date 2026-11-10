@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn a Lightkey project into Hope Lights' starting show.
+"""Turn a Lightkey project into Prism' starting show.
 
     python3 -I tools/import-lightkey.py "Hope NEW - FINAL copy.lightkeyproj" > \
         Packages/LightsCore/Sources/LightsCore/Resources/DefaultShow.json

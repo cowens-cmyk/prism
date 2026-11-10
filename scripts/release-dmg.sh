@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds Hope Lights for the booth Mac: Release, Developer ID signed,
+# Builds Prism for the booth Mac: Release, Developer ID signed,
 # notarized when the "notarization-profile" keychain profile exists, as a DMG
 # in build/dist. Without notarization the booth Mac opens it with
 # right-click › Open the first time.
@@ -11,8 +11,8 @@ IDENTITY="${DEVELOPER_ID_IDENTITY:-Developer ID Application: Hope Church JC (TCA
 PROFILE="notarization-profile"
 DIST="$ROOT/build/dist"
 # Outside ~/Desktop: iCloud's metadata on Desktop files breaks codesign.
-DERIVED="${TMPDIR:-/tmp}/hope-lights-release"
-APP="$DERIVED/Build/Products/Release/Hope Lights.app"
+DERIVED="${TMPDIR:-/tmp}/prism-release"
+APP="$DERIVED/Build/Products/Release/Prism.app"
 BUILD_NUMBER="$(git -C "$ROOT" rev-list --count HEAD)"
 
 echo "==> Testing LightsCore"
@@ -20,7 +20,7 @@ swift test --package-path "$ROOT/Packages/LightsCore" --scratch-path "$DERIVED/c
 
 echo "==> Building Release $BUILD_NUMBER"
 xcodegen generate --spec "$ROOT/project.yml" --project "$ROOT" | tail -1
-xcodebuild -project "$ROOT/HopeLights.xcodeproj" -scheme HopeLights -configuration Release \
+xcodebuild -project "$ROOT/Prism.xcodeproj" -scheme Prism -configuration Release \
   -derivedDataPath "$DERIVED" -destination 'generic/platform=macOS' \
   CURRENT_PROJECT_VERSION="$BUILD_NUMBER" build | tail -2
 
@@ -46,7 +46,7 @@ STAGE="$DIST/stage"
 mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
-hdiutil create -volname "Hope Lights" -srcfolder "$STAGE" -ov -format UDZO "$DIST/Hope-Lights-$VERSION.dmg" >/dev/null
+hdiutil create -volname "Prism" -srcfolder "$STAGE" -ov -format UDZO "$DIST/Prism-$VERSION.dmg" >/dev/null
 rm -rf "$STAGE"
-codesign --force --timestamp --sign "$IDENTITY" "$DIST/Hope-Lights-$VERSION.dmg"
-echo "==> $DIST/Hope-Lights-$VERSION.dmg"
+codesign --force --timestamp --sign "$IDENTITY" "$DIST/Prism-$VERSION.dmg"
+echo "==> $DIST/Prism-$VERSION.dmg"

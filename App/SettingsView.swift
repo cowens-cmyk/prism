@@ -83,7 +83,7 @@ struct SettingsView: View {
                             .foregroundStyle(checkResult == "Connected to Screens." ? .green : .secondary)
                     }
                 }
-                Text("In Screens: Settings › Integrations › Remote & API. Turn it on, then Manage Keys… and create a Watch key for Hope Lights. Use 127.0.0.1 when Screens runs on this Mac.")
+                Text("In Screens: Settings › Integrations › Remote & API. Turn it on, then Manage Keys… and create a Watch key for Prism. Use 127.0.0.1 when Screens runs on this Mac.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

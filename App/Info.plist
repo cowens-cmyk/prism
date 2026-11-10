@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Hope Lights</string>
+	<string>Prism</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>Hope Lights</string>
+	<string>Prism</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -27,6 +27,6 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Hope Church, Johnson City</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Hope Lights sends lighting cues to the lights over the network and listens for cues from Screens.</string>
+	<string>Prism sends lighting cues to the lights over the network and listens for cues from Screens.</string>
 </dict>
 </plist>

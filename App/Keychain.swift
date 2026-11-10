@@ -3,7 +3,7 @@ import Security
 
 /// Screens' access key, in this Mac's keychain rather than the preferences file.
 enum Keychain {
-    private static let service = "org.hopejc.lights.screens"
+    private static let service = "org.hopejc.prism.screens"
 
     static func read() -> String {
         var result: AnyObject?

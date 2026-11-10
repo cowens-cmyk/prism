@@ -1,4 +1,4 @@
-# Hope Lights
+# Prism
 
 Hope Church's lighting app for the Mac. It replaces Lightkey for Sunday
 services: one cue per part of the service, each with a colour and brightness
@@ -20,7 +20,8 @@ moves.
   click another one to use it instead.
 - **Songs match Screens:** when Screens starts a song, the SlimPARs take
   the colour of that song's background (a motion background's frame
-  included) at the levels the cue sets. It isn't saved into the cue, since
+  included) at the levels the cue sets. A dark or black-and-white
+  background leaves the cue's own colour up. It isn't saved into the cue, since
   next week's song has another background; **Keep This Colour** saves it.
   It's on for the Song cues and off for the rest; the switch under "Colour
   from a slide" changes that per cue. Needs Screens' Local API (see below).
@@ -34,7 +35,7 @@ and fades with the lights. Settings › Look switches to light.
 
 Quitting while a cue is up asks first.
 
-Lightkey must be closed while Hope Lights runs. Two programs sending to the
+Lightkey must be closed while Prism runs. Two programs sending to the
 same lights make them flicker between the two. If the app hears another
 console on the network, an orange bar names it.
 
@@ -47,25 +48,25 @@ that was live.
 Screens already sends a MIDI note when each plan item goes live: Walk-in 60,
 Countdown 61, Song 1–5 62–66, Announcements 67, Message 68, Closing 69,
 Walkout 70, Baptism 71, Communion 72. A row the church adds (Recognition)
-gets 73. Hope Lights uses the same notes, so in Screens:
+gets 73. Prism uses the same notes, so in Screens:
 
 1. Open **Settings › Lightkey & MIDI**.
-2. Choose **This Mac** if Hope Lights runs on the Screens Mac. Otherwise
-   choose **Another Mac** and enter the address and port from Hope Lights'
+2. Choose **This Mac** if Prism runs on the Screens Mac. Otherwise
+   choose **Another Mac** and enter the address and port from Prism'
    Settings › Screens.
 3. Turn on **Change Lightkey scenes with the service**.
 4. Use **Add Cue…** to add a **Recognition** row.
-5. Hope Lights listens on MIDI channel 16, Screens' default; Settings ›
+5. Prism listens on MIDI channel 16, Screens' default; Settings ›
    Screens › MIDI channel changes it. Notes on other channels are ignored,
    so a keyboard on the network can't fire Walk-in.
 
-For songs to match their backgrounds, Hope Lights reads the live
+For songs to match their backgrounds, Prism reads the live
 background from Screens' Local API (`GET /v1/show/frames/background`, in
-Screens after 0.27.0):
+Screens 0.28.0; Screens after 0.28.0 also skips a video's black opening):
 
 1. In Screens: **Settings › Integrations › Remote & API**, turn it on.
-2. **Manage Keys…**, create a **Watch** key named Hope Lights.
-3. In Hope Lights: **Settings › Songs match Screens' background**, enter the
+2. **Manage Keys…**, create a **Watch** key named Prism.
+3. In Prism: **Settings › Songs match Screens' background**, enter the
    Screens Mac (`127.0.0.1` on the same Mac, otherwise its address or
    `name.local`) and the key, and press **Check**. The key is kept in the
    keychain.
@@ -104,14 +105,15 @@ swift test --package-path Packages/LightsCore
 ```
 
 ```bash
-xcodegen generate && open HopeLights.xcodeproj
+xcodegen generate && open Prism.xcodeproj
 ```
 
 ```bash
 scripts/release-dmg.sh
 ```
 
-The DMG lands in `build/dist`. It is signed with the church's Developer ID
+The DMG lands in `build/dist`. The icon is drawn by
+`swift tools/make-icon.swift App/Assets.xcassets/AppIcon.appiconset`. It is signed with the church's Developer ID
 and notarized when a `notarization-profile` keychain profile exists.
 
 The starting show (`Packages/LightsCore/Sources/LightsCore/Resources/DefaultShow.json`)
@@ -121,6 +123,6 @@ is generated from the Lightkey project:
 python3 -I tools/import-lightkey.py "Hope NEW - FINAL copy.lightkeyproj" > Packages/LightsCore/Sources/LightsCore/Resources/DefaultShow.json
 ```
 
-The running show is saved in `~/Library/Application Support/Hope Lights/`,
+The running show is saved in `~/Library/Application Support/Prism/`,
 with `Show-previous.json` as it was when the app last opened. A show file
 that won't read is set aside as `Show-unreadable-….json`, not overwritten.

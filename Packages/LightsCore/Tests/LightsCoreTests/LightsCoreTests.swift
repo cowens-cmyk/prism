@@ -256,7 +256,7 @@ final class ManualClock: @unchecked Sendable {
         var slots = [UInt8](repeating: 0, count: 512)
         slots[0] = 9
         slots[511] = 7
-        let p = SACNPacket.make(universe: 2, slots: slots, sequence: 42, cid: cid, sourceName: "Hope Lights")
+        let p = SACNPacket.make(universe: 2, slots: slots, sequence: 42, cid: cid, sourceName: "Prism")
         #expect(p.count == 638)
         #expect(Array(p[0..<4]) == [0x00, 0x10, 0x00, 0x00])
         #expect(Array(p[16..<18]) == [0x72, 0x6E])
@@ -271,7 +271,7 @@ final class ManualClock: @unchecked Sendable {
         #expect(p[126] == 9)
         #expect(p[637] == 7)
         let header = SACNPacket.parse(p)
-        #expect(header == SACNPacket.Header(cid: cid, sourceName: "Hope Lights", universe: 2, priority: 100, terminated: false))
+        #expect(header == SACNPacket.Header(cid: cid, sourceName: "Prism", universe: 2, priority: 100, terminated: false))
         let stop = SACNPacket.make(universe: 1, slots: [], sequence: 1, cid: cid, sourceName: "x", terminated: true)
         #expect(SACNPacket.parse(stop)?.terminated == true)
         #expect(SACNPacket.parse([1, 2, 3]) == nil)
@@ -287,7 +287,7 @@ final class ManualClock: @unchecked Sendable {
         monitor.start(interfaces: [loopback])
         defer { monitor.stop() }
         try await Task.sleep(for: .milliseconds(200))
-        let ours = SACNSender(cid: ownCID, sourceName: "Hope Lights")
+        let ours = SACNSender(cid: ownCID, sourceName: "Prism")
         let theirs = SACNSender(cid: UUID(), sourceName: "Lightkey")
         ours.configure(interfaces: [loopback], unicastAddresses: [])
         theirs.configure(interfaces: [loopback], unicastAddresses: [])
@@ -422,6 +422,12 @@ final class ManualClock: @unchecked Sendable {
         #expect(first.blue == 1)
         #expect(first.red > 0.4 && first.red < 0.7)
         #expect(first.green < 0.25) // H.264 shifts it a little
+    }
+
+    @Test func blackOrGreyHasNoVividColour() {
+        #expect(ImagePalette.vividColors(in: image { _, _ in (0, 0, 0) }).isEmpty)
+        #expect(ImagePalette.vividColors(in: image { x, _ in let v = UInt8(x * 4); return (v, v, v) }).isEmpty)
+        #expect(ImagePalette.vividColors(in: image { _, _ in (10, 30, 200) }).first?.blue == 1)
     }
 
     @Test func greyPictureGivesWhite() {

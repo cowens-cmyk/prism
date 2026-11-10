@@ -134,7 +134,7 @@ public final class SACNSender: FrameSink, @unchecked Sendable {
     private var unicast: [sockaddr_in] = []
     private var sequences: [Int: UInt8] = [:]
 
-    public init(cid: UUID, sourceName: String = "Hope Lights", priority: UInt8 = SACNPacket.defaultPriority) {
+    public init(cid: UUID, sourceName: String = "Prism", priority: UInt8 = SACNPacket.defaultPriority) {
         self.cid = cid
         self.sourceName = sourceName
         self.priority = priority
@@ -238,7 +238,7 @@ public final class SACNMonitor: @unchecked Sendable {
     private let ownCID: UUID
     private let universes: [Int]
     private let onChange: @Sendable ([Source]) -> Void
-    private let queue = DispatchQueue(label: "org.hopejc.lights.monitor")
+    private let queue = DispatchQueue(label: "org.hopejc.prism.monitor")
     private var fd: Int32 = -1
     private var reader: DispatchSourceRead?
     private var pruner: DispatchSourceTimer?

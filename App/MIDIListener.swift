@@ -7,7 +7,7 @@ import LightsCore
 /// Screens on this Mac sends from a virtual source named "Screens"; Screens
 /// on another Mac joins this Mac's network MIDI session (its Lightkey
 /// settings take this Mac's IP and port). Both are connected here, plus a
-/// "Hope Lights" destination anything else can send to. With "every MIDI
+/// "Prism" destination anything else can send to. With "every MIDI
 /// input" on, every source is connected too.
 final class MIDIListener: @unchecked Sendable {
     struct Status: Equatable, Sendable {
@@ -35,17 +35,17 @@ final class MIDIListener: @unchecked Sendable {
     func start(listensToEverything: Bool) {
         lock.withLock { self.listensToEverything = listensToEverything }
         if client == 0 {
-            MIDIClientCreateWithBlock("Hope Lights" as CFString, &client) { [weak self] notification in
+            MIDIClientCreateWithBlock("Prism" as CFString, &client) { [weak self] notification in
                 if notification.pointee.messageID == .msgSetupChanged {
                     DispatchQueue.main.async { self?.reconnect() }
                 }
             }
             // Each source is connected with its own endpoint as the refCon,
             // which is how a packet says where it came from.
-            MIDIInputPortCreateWithProtocol(client, "Hope Lights In" as CFString, ._1_0, &port) { [weak self] list, refCon in
+            MIDIInputPortCreateWithProtocol(client, "Prism In" as CFString, ._1_0, &port) { [weak self] list, refCon in
                 self?.receive(list, source: refCon.map { MIDIEndpointRef(UInt(bitPattern: $0)) })
             }
-            MIDIDestinationCreateWithProtocol(client, "Hope Lights" as CFString, ._1_0, &destination) { [weak self] list, _ in
+            MIDIDestinationCreateWithProtocol(client, "Prism" as CFString, ._1_0, &destination) { [weak self] list, _ in
                 self?.receive(list, source: nil)
             }
             let session = MIDINetworkSession.default()
@@ -82,7 +82,7 @@ final class MIDIListener: @unchecked Sendable {
     }
 
     private func receive(_ list: UnsafePointer<MIDIEventList>, source: MIDIEndpointRef?) {
-        let sourceName = source.map(Self.name(of:)) ?? "Hope Lights"
+        let sourceName = source.map(Self.name(of:)) ?? "Prism"
         for packet in list.unsafeSequence() {
             // Only the packet's own words: packets in a list are packed, so
             // copying the whole 64-word `words` tuple reads past the end.

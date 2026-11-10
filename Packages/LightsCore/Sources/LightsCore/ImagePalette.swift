@@ -11,16 +11,25 @@ public enum ImagePalette {
     /// white, and the lights get white.
     static let minimumVividShare = 0.02
 
+    /// The picture's colours, or white for a black-and-white one: what a
+    /// dropped picture gives the SlimPARs.
     public static func colors(in image: CGImage, count: Int = 5) -> [LightColor] {
+        let vivid = vividColors(in: image, count: count)
+        return vivid.isEmpty ? [.white] : vivid
+    }
+
+    /// Only real colour; empty for black, grey or white. A song matching
+    /// Screens keeps its own colour then, rather than turning white.
+    public static func vividColors(in image: CGImage, count: Int = 5) -> [LightColor] {
         let side = 48
         guard let space = CGColorSpace(name: CGColorSpace.sRGB),
               let context = CGContext(
                 data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side * 4,
                 space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
-        else { return [.white] }
+        else { return [] }
         context.interpolationQuality = .medium
         context.draw(image, in: CGRect(x: 0, y: 0, width: side, height: side))
-        guard let data = context.data else { return [.white] }
+        guard let data = context.data else { return [] }
         let pixels = data.bindMemory(to: UInt8.self, capacity: side * side * 4)
 
         // Hue buckets weighted by how vivid each pixel is, so a dark
@@ -48,7 +57,7 @@ public enum ImagePalette {
             sums[bin].1 += g * w
             sums[bin].2 += b * w
         }
-        guard total > 0, weight.reduce(0, +) / total >= minimumVividShare else { return [.white] }
+        guard total > 0, weight.reduce(0, +) / total >= minimumVividShare else { return [] }
 
         var result: [LightColor] = []
         var taken = Set<Int>()
@@ -60,7 +69,7 @@ public enum ImagePalette {
             let w = weight[best]
             result.append(LightColor(red: sums[best].0 / w, green: sums[best].1 / w, blue: sums[best].2 / w).atFullStrength)
         }
-        return result.isEmpty ? [.white] : result
+        return result
     }
 
     public static func colors(at url: URL, count: Int = 5) -> [LightColor]? {

@@ -1,4 +1,4 @@
-name: HopeLights
+name: Prism
 options:
   bundleIdPrefix: org.hopejc
   deploymentTarget:
@@ -21,7 +21,7 @@ packages:
     path: Packages/LightsCore
 
 targets:
-  HopeLights:
+  Prism:
     type: application
     platform: macOS
     sources:
@@ -31,17 +31,18 @@ targets:
     info:
       path: App/Info.plist
       properties:
-        CFBundleDisplayName: Hope Lights
-        CFBundleName: Hope Lights
+        CFBundleDisplayName: Prism
+        CFBundleName: Prism
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.utilities
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
         NSHumanReadableCopyright: Hope Church, Johnson City
-        NSLocalNetworkUsageDescription: Hope Lights sends lighting cues to the lights over the network and listens for cues from Screens.
+        NSLocalNetworkUsageDescription: Prism sends lighting cues to the lights over the network and listens for cues from Screens.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: org.hopejc.lights
-        PRODUCT_NAME: Hope Lights
+        PRODUCT_BUNDLE_IDENTIFIER: org.hopejc.prism
+        PRODUCT_NAME: Prism
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_HARDENED_RUNTIME: YES
         GENERATE_INFOPLIST_FILE: NO
