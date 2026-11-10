@@ -57,7 +57,7 @@ Screens key without the keychain. Quitting asks first while a cue is up, so
 a test harness stops the app with `pkill -x "Hope Lights"`.
 
 Song matching needs Screens' `GET /v1/show/frames/background` (Screens
-branch `lights-background-frame`, `LocalAPIBridgeAdapter.liveBackgroundJPEG`).
+after 0.27.0, `LocalAPIBridgeAdapter.liveBackgroundJPEG`).
 
 Docs stay current: a change to behaviour, the rig or the Screens hookup
 updates `README.md` in the same commit.

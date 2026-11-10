@@ -60,8 +60,8 @@ gets 73. Hope Lights uses the same notes, so in Screens:
    so a keyboard on the network can't fire Walk-in.
 
 For songs to match their backgrounds, Hope Lights reads the live
-background from Screens' Local API (`GET /v1/show/frames/background`, added
-in the Screens branch `lights-background-frame`):
+background from Screens' Local API (`GET /v1/show/frames/background`, in
+Screens after 0.27.0):
 
 1. In Screens: **Settings › Integrations › Remote & API**, turn it on.
 2. **Manage Keys…**, create a **Watch** key named Hope Lights.
