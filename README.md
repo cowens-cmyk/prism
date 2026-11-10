@@ -14,8 +14,8 @@ moves.
 - **Colour:** click a group's swatch for the church's colours, type a hex
   value (`#FF00E5`), or use More for the system colour picker. "Use on all
   SlimPARs" copies the colour to all three SlimPAR groups.
-- **Match a slide:** drop a worship background or sermon slide (a picture or
-  a video) on a cue, in the list or on the Picture box. The SlimPARs take its
+- **Colour from a slide:** drop a worship background or sermon slide (a picture or
+  a video) on a cue, in the list or on its drop box. The SlimPARs take its
   strongest colour, and the colours found in it appear beside the picture;
   click another one to use it instead.
 - **Songs match Screens:** when Screens starts a song, the SlimPARs take
