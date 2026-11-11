@@ -151,6 +151,10 @@ struct MCPToolTests {
         control.liveCueID = "song1"
         #expect(try await call("delete_cue", ["cue": "Song 1", "confirm": true]).isError)
         #expect(control.show.cue("song1") != nil)
+
+        // The Blackout button and ⇧⌘B go to it by id.
+        #expect(try await call("delete_cue", ["cue": "Blackout", "confirm": true]).isError)
+        #expect(control.show.cue("blackout") != nil)
     }
 
     @Test func statusAndOptions() async throws {
@@ -422,5 +426,64 @@ struct ScreensFollowerTests {
         let screens = ScriptedScreens([], ["old": .success(Data("#00FF00".utf8))])
         let events = await run(screens, stale: "old", reads: 20)
         #expect(events == [.color(LightColor(hex: "#00FF00"))])
+    }
+
+    @Test func watchingOnlyNotesTheSlide() async {
+        // Walk-in doesn't match, but the countdown after it needs to know
+        // the walk-in slide was up when its note came.
+        let screens = ScriptedScreens(
+            [.success("walkIn"), .failure(.unreachable), .success("walkIn2")],
+            ["walkIn": .success(Data("#00FF00".utf8))])
+        var seen: [String] = []
+        await screens.follower().watch(
+            stillLive: { screens.lock.withLock { screens.reads < 4 } },
+            followed: { seen.append($0) })
+        #expect(seen == ["walkIn", "walkIn2"])
+        #expect(screens.backgroundReads == 0)
+    }
+
+    @Test func theSlideBeforeANonMatchingCueIsStale() async {
+        // The countdown's note lands while walk-in's slide is still up; the
+        // watch during walk-in recorded it, so it isn't taken.
+        let screens = ScriptedScreens([.success("walkIn")], ["walkIn": .success(Data("#00FF00".utf8)), "countdown": .success(Data("#8000FF".utf8))])
+        var last: String?
+        await screens.follower().watch(
+            stillLive: { screens.lock.withLock { screens.reads < 2 } },
+            followed: { last = $0 })
+        #expect(last == "walkIn")
+        screens.lock.withLock {
+            screens.reads = 0
+            screens.signatures = [.success("walkIn"), .success("countdown")]
+        }
+        let events = await run(screens, stale: last, reads: 5)
+        #expect(events == [.color(LightColor(hex: "#8000FF"))])
+    }
+
+    @Test func editsToTheLiveCue() {
+        let song = Show.bundledDefault().cue("song1")!
+        let rig = Rig.hope
+        var off = song
+        off.matchesScreens = false
+        var purple = song
+        purple.looks["screenSlimpars"] = GroupLook(color: LightColor(hex: "#8000FF")!, level: 0.1)
+        var dimmer = song
+        dimmer.looks["frontWash"] = GroupLook(level: 0.1)
+
+        // The switch takes effect on the live cue at once.
+        #expect(ScreensFollower.change(editing: song, to: off, rig: rig, following: true) == .stop)
+        #expect(ScreensFollower.change(editing: off, to: song, rig: rig, following: false) == .start)
+        // Off after a colour was picked by hand: nothing is following.
+        #expect(ScreensFollower.change(editing: song, to: off, rig: rig, following: false) == .none)
+        // A SlimPAR colour picked by hand wins; other edits leave matching alone.
+        #expect(ScreensFollower.change(editing: song, to: purple, rig: rig, following: true) == .stop)
+        #expect(ScreensFollower.change(editing: song, to: purple, rig: rig, following: false) == .none)
+        #expect(ScreensFollower.change(editing: song, to: dimmer, rig: rig, following: true) == .none)
+    }
+
+    @Test func goOnTheFollowingCueKeepsFollowing() {
+        #expect(ScreensFollower.keepsFollowing(firing: "song1", liveCueID: "song1", followingCueID: "song1"))
+        #expect(!ScreensFollower.keepsFollowing(firing: "song2", liveCueID: "song1", followingCueID: "song1"))
+        #expect(!ScreensFollower.keepsFollowing(firing: "song1", liveCueID: "song1", followingCueID: nil))
+        #expect(!ScreensFollower.keepsFollowing(firing: "song1", liveCueID: nil, followingCueID: nil))
     }
 }

@@ -136,9 +136,11 @@ final class AppModel {
             defaults.set(true, forKey: "songSlimparsDimmed")
         }
         // Back to what was up before the app quit, so a restart mid-service
-        // doesn't drop the room to black.
+        // doesn't drop the room to black. With no fade: the engine starts
+        // from a dark frame, so any fade would black the room out first and
+        // climb back, while the nodes are most likely still holding this look.
         if let id = defaults.string(forKey: "liveCue"), let cue = cue(id) {
-            go(cue, fade: 2)
+            go(cue, fade: 0)
         }
         watchNetworks()
         applyClaude()
@@ -168,17 +170,28 @@ final class AppModel {
     var ambientFade: Double { cue(liveCueID)?.fade ?? 1.5 }
 
     func go(_ cue: Cue, fade: TimeInterval? = nil) {
-        matchTask?.cancel()
-        screensColor = nil
-        engine.go(cue, fade: fade)
-        liveCueID = cue.id
         // The editor follows what's live, so the right side always shows the
         // cue in the room, whether Screens, Claude or a click put it up.
-        selectedCueID = cue.id
+        defer { selectedCueID = cue.id }
+        if ScreensFollower.keepsFollowing(firing: cue.id, liveCueID: liveCueID, followingCueID: followingCueID) {
+            // Go on the song that's up (or Screens sending its note again)
+            // keeps Screens' colour rather than swinging away and back.
+            engine.go(liveLook ?? cue, fade: fade)
+            return
+        }
+        stopFollowingScreens()
+        screensColor = nil
+        liveSince = Date()
+        engine.go(cue, fade: fade)
+        liveCueID = cue.id
         defaults.set(cue.id, forKey: "liveCue")
         // However the cue went up (Screens, a click, Claude, a relaunch), a
         // cue that matches Screens asks for the background on screen now.
-        if cue.followsScreensBackground { matchScreensBackground(for: cue.id) }
+        if cue.followsScreensBackground {
+            matchScreensBackground(for: cue.id)
+        } else {
+            watchScreensSlide(for: cue.id)
+        }
     }
 
     func go(id: String?) {
@@ -194,12 +207,18 @@ final class AppModel {
         let liveBefore = show.cue(liveCueID)
         show = next
         if let live = show.cue(liveCueID), live != liveBefore {
-            // Picking a SlimPAR colour by hand on the live cue wins over the
-            // one matched from Screens.
-            let slimpars = rig.groups.filter(\.isSlimpar)
-            if let liveBefore, slimpars.contains(where: { live.look(for: $0).color != liveBefore.look(for: $0).color }) {
-                matchTask?.cancel()
-                screensColor = nil
+            if let liveBefore {
+                let following = followingCueID == live.id
+                switch ScreensFollower.change(editing: liveBefore, to: live, rig: rig, following: following) {
+                case .start:
+                    matchScreensBackground(for: live.id)
+                case .stop:
+                    stopFollowingScreens()
+                    screensColor = nil
+                    watchScreensSlide(for: live.id)
+                case .none:
+                    break
+                }
             }
             if let look = liveLook { engine.update(look) }
         }
@@ -233,9 +252,13 @@ final class AppModel {
     }
 
     /// The live cue stays: deleting it would leave the room on a look no
-    /// longer in the list.
+    /// longer in the list. Blackout stays for the Blackout button.
+    func canDelete(_ id: String) -> Bool {
+        id != liveCueID && id != blackoutCue?.id && show.cues.count > 1
+    }
+
     func delete(_ id: String) {
-        guard id != liveCueID, show.cues.count > 1 else { return }
+        guard canDelete(id) else { return }
         if learningCueID == id { learningCueID = nil }
         let index = show.cues.firstIndex { $0.id == id }
         edit { $0.delete(id) }
@@ -334,9 +357,26 @@ final class AppModel {
     // MARK: Screens' background
 
     /// Screens' Mac and access key, for matching songs to their backgrounds.
-    var screensHost: String { didSet { defaults.set(screensHost, forKey: "screensHost") } }
-    var screensPort: Int { didSet { defaults.set(screensPort, forKey: "screensPort") } }
-    var screensKey: String { didSet { Keychain.write(screensKey) } }
+    /// A change here reaches the live cue at once: a follower still holding
+    /// the old key would keep failing until the next cue.
+    var screensHost: String {
+        didSet {
+            defaults.set(screensHost, forKey: "screensHost")
+            if screensHost != oldValue { restartScreens() }
+        }
+    }
+    var screensPort: Int {
+        didSet {
+            defaults.set(screensPort, forKey: "screensPort")
+            if screensPort != oldValue { restartScreens() }
+        }
+    }
+    var screensKey: String {
+        didSet {
+            Keychain.write(screensKey)
+            if screensKey != oldValue { restartScreens() }
+        }
+    }
     var screensAPI: ScreensAPI { ScreensAPI(host: screensHost, port: screensPort, key: screensKey) }
 
     /// The colour the live cue's SlimPARs took from Screens, if they did.
@@ -344,7 +384,12 @@ final class AppModel {
     private(set) var screensColor: LightColor?
     /// The last time matching didn't work, for the editor and Settings.
     private(set) var screensProblem: String?
+    /// The follower, or the watch on Screens' slide while a cue that
+    /// doesn't match is live.
     @ObservationIgnored private var matchTask: Task<Void, Never>?
+    /// The live cue, while its SlimPARs are meant to follow Screens. Set
+    /// even when the key is missing, so entering it starts matching.
+    @ObservationIgnored private var followingCueID: String?
 
     /// The live cue as it is in the room: with Screens' colour when matched.
     var liveLook: Cue? {
@@ -353,22 +398,24 @@ final class AppModel {
         return live.withSlimparColor(color, rig: rig)
     }
 
-    /// What was live in Screens when the last cue stopped following it. A
-    /// new cue's note can arrive a moment before Screens shows the new slide;
-    /// that old slide's background must not colour the new cue.
+    /// What was live in Screens just before the latest cue went up, whether
+    /// or not that cue matched. A new cue's note can arrive a moment before
+    /// Screens shows the new slide; that old slide's background must not
+    /// colour the new cue.
     @ObservationIgnored private var lastScreensSignature: String?
     @ObservationIgnored private var liveSince = Date()
 
     /// While a cue that matches Screens is live, its SlimPARs follow Screens'
-    /// background (see ScreensFollower).
-    func matchScreensBackground(for cueID: String) {
-        matchTask?.cancel()
+    /// background (see ScreensFollower). Screens' colour, if there is one,
+    /// stays up until the follower finds another.
+    private func matchScreensBackground(for cueID: String) {
+        stopFollowingScreens()
+        followingCueID = cueID
         let api = screensAPI
         guard api.isSetUp else {
             screensProblem = "Prism needs Screens' access key to match: Settings › Songs match Screens' background."
             return
         }
-        liveSince = Date()
         let stale = lastScreensSignature
         let follower = ScreensFollower(api: api)
         matchTask = Task { @MainActor in
@@ -382,6 +429,37 @@ final class AppModel {
                     case .problem(let problem): self?.screensProblem = problem
                     }
                 })
+        }
+    }
+
+    /// Notes Screens' live slide while a cue that doesn't match is up, for
+    /// the next cue that does.
+    private func watchScreensSlide(for cueID: String) {
+        stopFollowingScreens()
+        let api = screensAPI
+        guard api.isSetUp else { return }
+        let follower = ScreensFollower(api: api)
+        matchTask = Task { @MainActor in
+            await follower.watch(
+                stillLive: { [weak self] in self?.liveCueID == cueID },
+                followed: { [weak self] in self?.lastScreensSignature = $0 })
+        }
+    }
+
+    private func stopFollowingScreens() {
+        matchTask?.cancel()
+        matchTask = nil
+        followingCueID = nil
+    }
+
+    /// With a new Screens address or key: the live cue carries on as it
+    /// was (following, or a colour picked by hand), through the new one.
+    private func restartScreens() {
+        guard let id = liveCueID, cue(id) != nil else { return }
+        if followingCueID == id {
+            matchScreensBackground(for: id)
+        } else {
+            watchScreensSlide(for: id)
         }
     }
 

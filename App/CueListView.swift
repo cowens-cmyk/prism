@@ -4,6 +4,8 @@ import UniformTypeIdentifiers
 
 struct CueListView: View {
     @Bindable var model: AppModel
+    /// The cue waiting for Delete to be confirmed. There's no undo.
+    @State private var deleting: Cue?
 
     var body: some View {
         List(selection: $model.selectedCueID) {
@@ -14,11 +16,20 @@ struct CueListView: View {
                         Button("Go") { model.go(cue) }
                         Button("Duplicate") { model.duplicate(cue.id) }
                         Divider()
-                        Button("Delete", role: .destructive) { model.delete(cue.id) }
-                            .disabled(model.liveCueID == cue.id)
+                        Button("Delete…", role: .destructive) { deleting = cue }
+                            .disabled(!model.canDelete(cue.id))
                     }
             }
             .onMove { model.move(from: $0, to: $1) }
+        }
+        .confirmationDialog(
+            "Delete \(deleting?.displayName ?? "")?",
+            isPresented: Binding(get: { deleting != nil }, set: { if !$0 { deleting = nil } }),
+            presenting: deleting
+        ) { cue in
+            Button("Delete", role: .destructive) { model.delete(cue.id) }
+        } message: { cue in
+            Text((cue.note.map { "Screens' note \($0) will no longer change the lights. " } ?? "") + "This can't be undone.")
         }
         .safeAreaInset(edge: .bottom) {
             HStack {
@@ -50,7 +61,7 @@ struct CueRow: View {
                             .frame(width: 7, height: 7)
                             .shadow(color: Theme.live, radius: 4)
                     }
-                    Text(cue.name.trimmingCharacters(in: .whitespaces).isEmpty ? "Untitled cue" : cue.name)
+                    Text(cue.displayName)
                         .font(.system(.body, design: .rounded).weight(isLive ? .bold : .medium))
                         .lineLimit(1)
                 }
@@ -120,6 +131,12 @@ enum PictureDrop {
             return true
         }
         return false
+    }
+}
+
+extension Cue {
+    var displayName: String {
+        name.trimmingCharacters(in: .whitespaces).isEmpty ? "Untitled cue" : name
     }
 }
 

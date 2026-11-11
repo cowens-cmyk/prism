@@ -128,7 +128,9 @@ struct SettingsView: View {
                 Toggle("Check for updates automatically", isOn: Bindable(updater).checksAutomatically)
                 HStack {
                     if let available = updater.available {
-                        Button("Update to \(available.version)…") { Task { await updater.install(available) } }
+                        // Asks first, with Later as the default, the same as the menu:
+                        // updating quits Prism mid-service otherwise.
+                        Button("Update to \(available.version)…") { updater.promptToInstall() }
                     } else {
                         Button("Check Now") { Task { await updater.check(userInitiated: true) } }
                     }

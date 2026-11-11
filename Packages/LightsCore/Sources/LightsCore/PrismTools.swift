@@ -272,7 +272,7 @@ public enum PrismTools {
             },
             MCPTool(
                 name: "delete_cue", title: "Delete cue",
-                description: "Deletes a cue. Without confirm it only says what would be deleted; ask the person, then call again with confirm true. The live cue can't be deleted.",
+                description: "Deletes a cue. Without confirm it only says what would be deleted; ask the person, then call again with confirm true. The live cue and Blackout can't be deleted.",
                 inputSchema: [
                     "type": "object",
                     "properties": ["cue": cueArgument, "confirm": ["type": "boolean"]],
@@ -284,6 +284,9 @@ public enum PrismTools {
                     throw MCPToolError("\(cue.name) is live. Put another cue up first.")
                 }
                 guard control.show.cues.count > 1 else { throw MCPToolError("\(cue.name) is the only cue.") }
+                guard cue.id != "blackout" else {
+                    throw MCPToolError("Blackout can't be deleted: the Blackout button uses it.")
+                }
                 let note = cue.note.map { " Screens' note \($0) will fire nothing." } ?? ""
                 guard arguments["confirm"]?.boolValue == true else {
                     return MCPToolResult(text: "This would delete \(cue.name).\(note) It can't be undone here. Ask the person, then call again with confirm true.")

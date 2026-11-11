@@ -42,7 +42,7 @@ struct ContentView: View {
                 } label: {
                     Label("Blackout", systemImage: "moon.fill")
                 }
-                .help("Fade everything out (⇧⌘B)")
+                .help("Turn everything off now (⇧⌘B)")
                 .disabled(model.blackoutCue == nil)
             }
         }

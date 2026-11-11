@@ -34,7 +34,8 @@ user-facing text is short, plain and factual.
   (`mxu-slides-main/apps/mac/Packages/PresenterCore/.../ServicePosition.swift`).
   Screens is the authority on notes; Prism follows it.
 - Nothing is sent until a cue has been fired. Opening the app must never
-  black out the room.
+  black out the room. A relaunch restores the live cue with fade 0: the
+  engine starts from a dark frame, so any fade dips the room to black first.
 - Intensity merges highest-wins when importing Lightkey cues (see the
   importer's docstring); reading presets last-wins leaves the songs dark.
 - `Show.version` stays 1; new cue fields are optional and decode
@@ -48,6 +49,11 @@ user-facing text is short, plain and factual.
   `AppModel.editShow`, the same path as the window.
 - Screens' colour on a matched song (`AppModel.screensColor`) is never
   written into the cue unless the operator presses Keep This Colour.
+- Prism reads Screens' live slide while any cue is up, not only a matching
+  one (`ScreensFollower.watch`), so a matching cue's note that lands before
+  Screens changes slide doesn't take the previous slide's background.
+- Blackout (id `blackout`) can't be deleted: the toolbar button and ⇧⌘B
+  go to it.
 
 ## Build and test
 

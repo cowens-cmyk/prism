@@ -5,6 +5,7 @@ import SwiftUI
 struct CueEditorView: View {
     var model: AppModel
     var cue: Cue
+    @State private var anchor = WindowAnchor()
 
     var body: some View {
         ScrollView {
@@ -31,11 +32,16 @@ struct CueEditorView: View {
             }
         }
         .scrollEdgeEffectStyle(.soft, for: .top)
+        .background(WindowAnchorView(anchor: anchor))
         // The window would otherwise open with the name selected for typing.
-        // At launch the window isn't key yet, so this waits a moment.
+        // At launch the window isn't key yet, so this waits a moment. Only
+        // this editor's own window: the editor is rebuilt whenever a cue goes
+        // up, and taking focus from Settings or a colour box would cut off
+        // what someone is typing there (a node address, half entered).
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                for window in NSApp.windows where window.firstResponder is NSTextView { window.makeFirstResponder(nil) }
+                guard let window = anchor.view?.window, window.firstResponder is NSTextView else { return }
+                window.makeFirstResponder(nil)
             }
         }
     }
@@ -366,4 +372,21 @@ struct GroupRow: View {
         current.set(look, for: self.group)
         model.update(current)
     }
+}
+
+/// Finds the window a SwiftUI view is in.
+final class WindowAnchor {
+    weak var view: NSView?
+}
+
+struct WindowAnchorView: NSViewRepresentable {
+    let anchor: WindowAnchor
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        anchor.view = view
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }

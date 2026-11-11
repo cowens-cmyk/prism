@@ -98,4 +98,52 @@ public struct ScreensFollower: Sendable {
         }
         return current
     }
+
+    /// While a cue that doesn't match is live, only notes what Screens has
+    /// live, so the next matching cue knows which slide was already up when
+    /// its note came: the walk-in slide before the countdown, or the last
+    /// announcement before a song. Nothing is fetched or coloured.
+    public func watch(
+        stillLive: @escaping @MainActor () -> Bool,
+        followed: @escaping @MainActor (String) -> Void
+    ) async {
+        while !Task.isCancelled, await stillLive() {
+            var wait = 3.0
+            if case .success(let live) = await signature() {
+                guard !Task.isCancelled, await stillLive() else { return }
+                await followed(live)
+                wait = 0.75
+            }
+            await pause(wait)
+        }
+    }
+
+    /// What an edit to the live cue does to following Screens' background.
+    public enum Change: Equatable, Sendable {
+        case none
+        /// Stop following and go back to the cue's own colour.
+        case stop
+        /// Start following now, without waiting for the next Go.
+        case start
+    }
+
+    /// Turning the switch on or off on the live cue takes effect at once,
+    /// and picking a SlimPAR colour by hand wins over the matched one.
+    /// `following` says whether the live cue is following Screens now.
+    public static func change(editing before: Cue, to after: Cue, rig: Rig, following: Bool) -> Change {
+        if before.followsScreensBackground != after.followsScreensBackground {
+            if after.followsScreensBackground { return .start }
+            return following ? .stop : .none
+        }
+        guard following else { return .none }
+        let slimpars = rig.groups.filter(\.isSlimpar)
+        return slimpars.contains { after.look(for: $0).color != before.look(for: $0).color } ? .stop : .none
+    }
+
+    /// Going to the cue that's already live and following keeps the follower
+    /// and its colour: starting over would put the cue's own colour up and
+    /// wait out the slide that's still on screen, a visible swing mid-song.
+    public static func keepsFollowing(firing cueID: String, liveCueID: String?, followingCueID: String?) -> Bool {
+        followingCueID != nil && cueID == liveCueID && cueID == followingCueID
+    }
 }

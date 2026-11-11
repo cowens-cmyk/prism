@@ -48,9 +48,10 @@ extension Show {
     }
 
     /// The last cue stays: an empty show has nothing to put in the room.
+    /// Blackout stays too: the Blackout button and ⇧⌘B go to it.
     @discardableResult
     public mutating func delete(_ id: String) -> Bool {
-        guard cues.count > 1, cues.contains(where: { $0.id == id }) else { return false }
+        guard cues.count > 1, id != "blackout", cues.contains(where: { $0.id == id }) else { return false }
         cues.removeAll { $0.id == id }
         return true
     }

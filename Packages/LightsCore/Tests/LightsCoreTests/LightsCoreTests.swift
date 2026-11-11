@@ -216,6 +216,18 @@ final class ManualClock: @unchecked Sendable {
         #expect(engine.currentFrame().value(universe: 1, address: 310) == 26)
     }
 
+    @Test func aCuePutBackWithNoFadeIsTheFirstFrameSent() {
+        // A relaunch restores the live cue with fade 0. With any fade the
+        // first frame would come from the engine's dark start and black the
+        // room out before climbing back.
+        let sink = RecordingSink()
+        let engine = LightEngine(rig: .hope, sink: sink)
+        let song1 = Show.bundledDefault().cue("song1")!
+        engine.go(song1, fade: 0)
+        engine.tick()
+        #expect(sink.frames == [Renderer.frame(for: song1, rig: .hope)])
+    }
+
     @Test func nothingIsSentBeforeTheFirstCue() {
         let sink = RecordingSink()
         let engine = LightEngine(rig: .hope, sink: sink)
@@ -552,6 +564,11 @@ final class ManualClock: @unchecked Sendable {
         #expect(!last)
         #expect(!missing)
         #expect(show.cues.map(\.id) == ["b"])
+
+        var hope = Show.bundledDefault()
+        let deleted = hope.delete("blackout")
+        #expect(!deleted)
+        #expect(hope.cue("blackout") != nil)
     }
 
     @Test func nextFreeNoteWhenTheTopIsFull() {

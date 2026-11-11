@@ -28,11 +28,17 @@ moves.
   next week's song has another background; **Keep This Colour** saves it.
   It's on for the Song cues and the Countdown and off for the rest; it needs
   Screens' access key in Settings, and the cue says so when it's missing; the switch under "Colour
-  from a slide" changes that per cue. Needs Screens' Local API (see below).
+  from a slide" changes that per cue, on the live cue at once. A new key or
+  address in Settings is used at once too. Go on the song that's already up
+  (or Screens sending its note again) keeps Screens' colour. Needs Screens'
+  Local API (see below).
 - **Fade:** how long the cue takes to come up from whatever was showing.
-- **Blackout:** the moon button in the toolbar (⇧⌘B).
+- **Blackout:** the moon button in the toolbar (⇧⌘B) turns everything off
+  at once, with no fade.
 - **Add Cue** starts a copy of the selected cue's look. Right-click a cue to
-  duplicate or delete it, and drag cues to reorder them.
+  duplicate or delete it, and drag cues to reorder them. Delete asks first
+  and names the Screens note that will stop working; there's no undo. The
+  live cue and Blackout can't be deleted.
 
 The window is dark grey, lit by a gradient of the colours on in the room,
 and fades with the lights. Settings › Look switches to light.
@@ -44,8 +50,8 @@ same lights make them flicker between the two. If the app hears another
 console on the network, an orange bar names it.
 
 Opening the app sends nothing until a cue is fired, so it never blacks out
-a room something else is lighting. After a restart it fades back to the cue
-that was live.
+a room something else is lighting. After a restart it puts the cue that was
+live straight back up, with no fade, so the room doesn't dip to black.
 
 ## Screens
 
@@ -101,7 +107,7 @@ at `http://<this Mac>.local:6990/mcp`, behind a key.
 The key is in the copied command; anyone with it can change the lights.
 **New Key…** shuts out the old one. If the Mac's firewall is on, allow
 Prism's incoming connections when macOS asks. Deleting a cue asks Claude
-to check with you first, and the live cue can't be deleted.
+to check with you first, and the live cue and Blackout can't be deleted.
 
 The tools are in `PrismTools.swift`; `MCPHost.swift` is the HTTP server.
 
@@ -109,8 +115,9 @@ The tools are in `PrismTools.swift`; `MCPHost.swift` is the HTTP server.
 
 Prism checks GitHub Releases (`cowens-cmyk/prism`) at launch and every six
 hours. A newer release shows in the Prism menu and Settings › Updates;
-**Update** downloads it, checks it's signed by Hope Church's Developer ID,
-quits, swaps the app and reopens on the cue that was up. Nothing installs by
+**Update** asks first (Later is the default), then downloads it, checks it's
+signed by Hope Church's Developer ID, quits, swaps the app and reopens on the
+cue that was up. Nothing installs by
 itself. To release: bump `MARKETING_VERSION` in `project.yml`, commit, and
 run `scripts/release-dmg.sh --publish`.
 

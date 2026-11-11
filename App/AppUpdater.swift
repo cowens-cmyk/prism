@@ -100,12 +100,12 @@ final class AppUpdater {
         candidate.compare(current, options: .numeric) == .orderedDescending
     }
 
-    private func promptToInstall() {
+    func promptToInstall() {
         guard let available else { return }
         let alert = NSAlert()
         alert.messageText = "Prism \(available.version) is available"
         alert.informativeText = (available.notes.isEmpty ? "" : String(available.notes.prefix(600)) + "\n\n")
-            + "You have \(currentVersion). Prism will quit, update and reopen, then fade back to the cue that's up. Don't update during a service."
+            + "You have \(currentVersion). Prism will quit, update and reopen on the cue that's up. Don't update during a service."
         // Later comes first so a stray Return doesn't start an update.
         alert.addButton(withTitle: "Later")
         alert.addButton(withTitle: "Update and Relaunch")
