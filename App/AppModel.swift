@@ -164,6 +164,9 @@ final class AppModel {
         screensColor = nil
         engine.go(cue, fade: fade)
         liveCueID = cue.id
+        // The editor follows what's live, so the right side always shows the
+        // cue in the room, whether Screens, Claude or a click put it up.
+        selectedCueID = cue.id
         defaults.set(cue.id, forKey: "liveCue")
     }
 

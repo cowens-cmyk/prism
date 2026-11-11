@@ -8,7 +8,8 @@ moves.
 ## Using it
 
 - **Go to a cue:** click ▶ next to it, or select it and press **Go** (⌘↩).
-  The live cue is marked LIVE.
+  The live cue is marked LIVE, and the right side switches to it whenever a
+  cue goes up, from Screens or by hand.
 - **Change a cue:** select it, then set each group's colour and brightness.
   If the cue is live, the room changes as you drag.
 - **Colour:** click a group's swatch for the church's colours, type a hex
