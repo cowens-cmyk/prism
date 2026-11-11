@@ -6,8 +6,9 @@ import Foundation
 public enum SACNPacket {
     public static let port: UInt16 = 5568
     public static let length = 638
-    /// The default priority. A source at a higher one wins at the node.
-    public static let defaultPriority: UInt8 = 100
+    /// Lightkey's universes were set to 150, above the standard 100, so
+    /// Prism sends at 150 too: whatever Lightkey outranked, Prism outranks.
+    public static let defaultPriority: UInt8 = 150
 
     /// 239.255.<high>.<low> for a universe.
     public static func multicastAddress(universe: Int) -> String {

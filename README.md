@@ -79,8 +79,9 @@ Song 5 cue; Screens does that itself.
 ## The rig
 
 From the Lightkey project "Hope NEW - FINAL", sent as sACN (E1.31) on
-universes 1 and 2, multicast on every network by default (Settings › Lights
-picks one network or adds unicast node addresses).
+universes 1 and 2 at priority 150 (Lightkey's setting), multicast on every
+network by default (Settings › Lights picks one network or adds unicast node
+addresses).
 
 | Group | Fixtures | Universe / address |
 | --- | --- | --- |
