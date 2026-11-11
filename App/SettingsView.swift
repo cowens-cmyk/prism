@@ -11,6 +11,7 @@ struct SettingsView: View {
     @State private var checkResult: String?
     @State private var confirmNewKey = false
     @State private var copied = false
+    private let updater = AppUpdater.shared
     @FocusState private var unicastFocused: Bool
 
     var body: some View {
@@ -57,7 +58,12 @@ struct SettingsView: View {
                     Text(networkMIDIHint)
                         .textSelection(.enabled)
                 }
-                Text("In Screens, open Settings › Lightkey & MIDI. Pick This Mac, or Another Mac with the address above. Use the same MIDI channel as here, turn on “Change Lightkey scenes with the service”, and use Add Cue… to add a Recognition row.")
+                if model.followsScreens, !model.midiStatus.connected.isEmpty, model.lastNote == nil {
+                    Text("Screens is connected but hasn't sent a cue. In Screens: Settings › Integrations › Lightkey & MIDI, turn on “Change Lightkey scenes with the service” under Lighting cues. Then present a plan item, or press Send on a row there.")
+                        .font(.callout)
+                        .foregroundStyle(.orange)
+                }
+                Text("In Screens, open Settings › Integrations › Lightkey & MIDI. Pick This Mac, or Another Mac with the address above. Use the same MIDI channel as here, turn on “Change Lightkey scenes with the service”, and use Add Cue… to add a Recognition row.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -115,6 +121,23 @@ struct SettingsView: View {
                     }
                 }
                 Text("Run the copied command in Terminal on the Mac with Claude Code, then ask Claude to change the lights. The key is in the command: anyone with it can change the lights.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Updates") {
+                Toggle("Check for updates automatically", isOn: Bindable(updater).checksAutomatically)
+                HStack {
+                    if let available = updater.available {
+                        Button("Update to \(available.version)…") { Task { await updater.install(available) } }
+                    } else {
+                        Button("Check Now") { Task { await updater.check(userInitiated: true) } }
+                    }
+                    if updater.isWorking { ProgressView().controlSize(.small) }
+                    if let status = updater.status {
+                        Text(status).font(.callout).foregroundStyle(.secondary)
+                    }
+                }
+                Text("Version \(updater.currentVersion). Updating quits Prism and reopens it on the cue that was up; do it outside a service.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

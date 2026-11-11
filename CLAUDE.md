@@ -75,5 +75,10 @@ your phone-remote key, run Screens' Debug build with
 sha256(salt + secret)), and drive it through `/mcp` and `/v1/show/slide`.
 Export Screens' defaults first and put them back after.
 
+Releases: bump `MARKETING_VERSION` in `project.yml`, commit, then
+`scripts/release-dmg.sh --publish` (pushes main to github.com/cowens-cmyk/prism
+and creates the release installed copies update from). Only when Cameron
+asks for an update to go out.
+
 Docs stay current: a change to behaviour, the rig or the Screens hookup
 updates `README.md` in the same commit.

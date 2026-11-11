@@ -97,6 +97,8 @@ struct OutputStatus: View {
             let cue = model.show.cue(forNote: last.note)?.name ?? "note \(last.note)"
             return "Screens: \(cue)"
         }
-        return model.midiStatus.connected.isEmpty ? "Waiting for Screens" : "Listening for Screens"
+        // Connected but silent is almost always Screens' own switch, off by
+        // default on each Mac.
+        return model.midiStatus.connected.isEmpty ? "Waiting for Screens" : "Screens connected, no cues yet"
     }
 }

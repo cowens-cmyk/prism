@@ -2,8 +2,15 @@
 # Builds Prism for the booth Mac: Release, Developer ID signed,
 # notarized when the "notarization-profile" keychain profile exists, as a DMG
 # in build/dist. Without notarization the booth Mac opens it with
-# right-click › Open the first time.
+# System Settings › Privacy & Security › Open Anyway the first time.
+#
+#   scripts/release-dmg.sh            # build the DMG only
+#   scripts/release-dmg.sh --publish  # also push main and publish a GitHub
+#                                     # release; installed copies update from it
 set -euo pipefail
+PUBLISH=0
+[ "${1:-}" = "--publish" ] && PUBLISH=1
+REPO="${PRISM_REPO:-cowens-cmyk/prism}"
 
 export PATH="/opt/homebrew/bin:$PATH"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -14,6 +21,11 @@ DIST="$ROOT/build/dist"
 DERIVED="${TMPDIR:-/tmp}/prism-release"
 APP="$DERIVED/Build/Products/Release/Prism.app"
 BUILD_NUMBER="$(git -C "$ROOT" rev-list --count HEAD)"
+PLANNED="$(awk -F'"' '/MARKETING_VERSION:/ {print $2; exit}' "$ROOT/project.yml")"
+if [ $PUBLISH = 1 ] && gh release view "v$PLANNED" --repo "$REPO" >/dev/null 2>&1; then
+  echo "v$PLANNED is already released: bump MARKETING_VERSION in project.yml" >&2
+  exit 1
+fi
 
 echo "==> Testing LightsCore"
 swift test --package-path "$ROOT/Packages/LightsCore" --scratch-path "$DERIVED/core" 2>&1 | tail -1
@@ -50,3 +62,17 @@ hdiutil create -volname "Prism" -srcfolder "$STAGE" -ov -format UDZO "$DIST/Pris
 rm -rf "$STAGE"
 codesign --force --timestamp --sign "$IDENTITY" "$DIST/Prism-$VERSION.dmg"
 echo "==> $DIST/Prism-$VERSION.dmg"
+
+if [ $PUBLISH = 1 ]; then
+  echo "==> Publishing v$VERSION to $REPO"
+  # Act as the repository's owner whichever gh account is active, and push
+  # with that login so a different Keychain git credential can't get in the way.
+  export GH_TOKEN="$(gh auth token --user "${REPO%%/*}")"
+  HELPER='!f(){ echo username=x-access-token; echo "password=$GH_TOKEN"; }; f'
+  PREVIOUS="$(gh release view --repo "$REPO" --json tagName -q .tagName 2>/dev/null || true)"
+  NOTES="$(git -C "$ROOT" log --pretty="- %s" "${PREVIOUS:+$PREVIOUS..}HEAD" 2>/dev/null | head -40 || true)"
+  git -C "$ROOT" -c credential.helper= -c "credential.helper=$HELPER" push origin HEAD:main
+  gh release create "v$VERSION" "$DIST/Prism-$VERSION.dmg" \
+    --repo "$REPO" --target "$(git -C "$ROOT" rev-parse HEAD)" \
+    --title "Prism $VERSION" --notes "$NOTES"
+fi

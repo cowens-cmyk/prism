@@ -13,6 +13,11 @@ struct PrismApp: App {
         }
         .defaultSize(width: 1240, height: 900)
         .commands {
+            CommandGroup(after: .appInfo) {
+                Button(AppUpdater.shared.available.map { "Update to Prism \($0.version)…" } ?? "Check for Updates…") {
+                    Task { await AppUpdater.shared.check(userInitiated: true) }
+                }
+            }
             CommandGroup(replacing: .newItem) {
                 Button("New Cue") { delegate.model.addCue() }
                     .keyboardShortcut("n")
@@ -33,9 +38,12 @@ struct PrismApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let model = AppModel()
+    /// Set by an update, which relaunches straight back to the live cue.
+    static var quitsWithoutAsking = false
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         model.start()
+        AppUpdater.shared.start()
         #if DEBUG
         // Screenshots at a set size: HL_WINDOW=1300x1040.
         if let size = ProcessInfo.processInfo.environment["HL_WINDOW"]?.split(separator: "x").compactMap({ Double($0) }), size.count == 2 {
@@ -51,7 +59,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// without a source (often black), so a quit asks first while a cue is
     /// up. A restart, shutdown or log out goes straight through.
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard model.liveCueID != nil, model.outputEnabled, !Self.systemIsGoingDown() else { return .terminateNow }
+        guard model.liveCueID != nil, model.outputEnabled, !Self.quitsWithoutAsking, !Self.systemIsGoingDown() else {
+            return .terminateNow
+        }
         let alert = NSAlert()
         alert.messageText = "Quit Prism?"
         alert.informativeText = "The lights stop getting cues from this Mac."

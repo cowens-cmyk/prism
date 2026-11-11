@@ -50,7 +50,7 @@ Countdown 61, Song 1–5 62–66, Announcements 67, Message 68, Closing 69,
 Walkout 70, Baptism 71, Communion 72. A row the church adds (Recognition)
 gets 73. Prism uses the same notes, so in Screens:
 
-1. Open **Settings › Lightkey & MIDI**.
+1. Open **Settings › Integrations › Lightkey & MIDI**.
 2. Choose **This Mac** if Prism runs on the Screens Mac. Otherwise
    choose **Another Mac** and enter the address and port from Prism's
    Settings › Screens.
@@ -100,6 +100,15 @@ Prism's incoming connections when macOS asks. Deleting a cue asks Claude
 to check with you first, and the live cue can't be deleted.
 
 The tools are in `PrismTools.swift`; `MCPHost.swift` is the HTTP server.
+
+## Updates
+
+Prism checks GitHub Releases (`cowens-cmyk/prism`) at launch and every six
+hours. A newer release shows in the Prism menu and Settings › Updates;
+**Update** downloads it, checks it's signed by Hope Church's Developer ID,
+quits, swaps the app and reopens on the cue that was up. Nothing installs by
+itself. To release: bump `MARKETING_VERSION` in `project.yml`, commit, and
+run `scripts/release-dmg.sh --publish`.
 
 ## The rig
 
