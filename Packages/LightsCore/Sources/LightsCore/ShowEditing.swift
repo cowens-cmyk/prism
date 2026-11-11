@@ -89,6 +89,19 @@ extension Show {
         replace(cue)
     }
 
+    /// Hope keeps the blinders glowing at 1% in every cue but Blackout. A show
+    /// saved before that rule gets it once; a cue already brighter keeps its level.
+    public static let blinderFloor = 0.01
+
+    public mutating func liftBlindersToFloor() {
+        for index in cues.indices where cues[index].id != "blackout" {
+            var look = cues[index].looks["blinders"] ?? .off
+            guard look.level < Self.blinderFloor else { continue }
+            look.level = Self.blinderFloor
+            cues[index].looks["blinders"] = look
+        }
+    }
+
     /// Screens gives a row added to its table the lowest free note above its
     /// defaults (60–72); so does this.
     public func nextFreeNote() -> Int {

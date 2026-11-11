@@ -1,11 +1,13 @@
 import Foundation
 import Security
 
-/// Screens' access key, in this Mac's keychain rather than the preferences file.
+/// Keys kept in this Mac's keychain rather than the preferences file:
+/// Screens' access key, and the key Claude uses to reach Prism.
 enum Keychain {
-    private static let service = "org.hopejc.prism.screens"
+    static let screens = "org.hopejc.prism.screens"
+    static let claude = "org.hopejc.prism.claude"
 
-    static func read() -> String {
+    static func read(service: String = screens) -> String {
         var result: AnyObject?
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
@@ -15,7 +17,7 @@ enum Keychain {
         return String(decoding: data, as: UTF8.self)
     }
 
-    static func write(_ value: String) {
+    static func write(_ value: String, service: String = screens) {
         let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service]
         SecItemDelete(query as CFDictionary)
         guard !value.isEmpty else { return }

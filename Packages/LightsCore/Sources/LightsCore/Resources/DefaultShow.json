@@ -5,7 +5,7 @@
       "id": "walkIn",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",
@@ -53,7 +53,7 @@
       "id": "countdown",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#0055FF",
@@ -101,7 +101,7 @@
       "id": "song1",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#0055FF",
@@ -149,7 +149,7 @@
       "id": "announcements",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",
@@ -197,7 +197,7 @@
       "id": "song2",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",
@@ -245,7 +245,7 @@
       "id": "song3",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",
@@ -293,7 +293,7 @@
       "id": "song4",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#1300FF",
@@ -341,7 +341,7 @@
       "id": "message",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",
@@ -389,7 +389,7 @@
       "id": "song5",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",
@@ -437,7 +437,7 @@
       "id": "closing",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",
@@ -485,7 +485,7 @@
       "id": "walkout",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",
@@ -581,7 +581,7 @@
       "id": "baptism",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#0055FF",
@@ -629,7 +629,7 @@
       "id": "custom:Recognition",
       "looks": {
         "blinders": {
-          "level": 0.0
+          "level": 0.01
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",

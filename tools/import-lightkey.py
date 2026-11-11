@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Turn a Lightkey project into Prism' starting show.
+"""Turn a Lightkey project into Prism's starting show.
 
     python3 -I tools/import-lightkey.py "Hope NEW - FINAL copy.lightkeyproj" > \
         Packages/LightsCore/Sources/LightsCore/Resources/DefaultShow.json
@@ -37,6 +37,7 @@ GROUPS = {
     "floorSpots": ["E2", "E3"],
     "blinders": ["BL1", "BL2", "BL3", "BL4"],
 }
+BLINDER_FLOOR = 0.01
 BRIGHTNESS_ONLY = {"frontWash", "rearWash", "stageSpots", "floorSpots", "blinders"}
 
 # (Lightkey cue, our name, Screens position, Screens' default note).
@@ -136,6 +137,8 @@ def main(path):
             if group not in BRIGHTNESS_ONLY:
                 entry["color"] = values.get("color", "#FFFFFF")
             groups[group] = entry
+        # Hope keeps the blinders glowing at 1% in every cue but Blackout.
+        groups["blinders"]["level"] = max(groups["blinders"]["level"], BLINDER_FLOOR)
         show["cues"].append({
             "id": position, "name": name, "screensPosition": position, "note": note,
             "fade": cue["fadeInDuration"], "looks": groups,

@@ -3,6 +3,7 @@ import Foundation
 import LightsCore
 import Observation
 import SwiftUI
+import SystemConfiguration
 
 @MainActor
 @Observable
@@ -80,6 +81,12 @@ final class AppModel {
         // Tests against a stand-in Screens without touching the keychain.
         if let key = ProcessInfo.processInfo.environment["HL_SCREENS_KEY"] { screensKey = key }
         #endif
+        claudeEnabled = defaults.bool(forKey: "claude")
+        claudeKey = Keychain.read(service: Keychain.claude)
+        #if DEBUG
+        if let key = ProcessInfo.processInfo.environment["HL_CLAUDE_KEY"] { claudeKey = key }
+        if let port = ProcessInfo.processInfo.environment["HL_CLAUDE_PORT"].flatMap(UInt16.init) { claudePort = port }
+        #endif
         listensToAllMIDI = defaults.bool(forKey: "allMIDI")
         followsScreens = defaults.bool(forKey: "followScreens")
         outputEnabled = defaults.bool(forKey: "output")
@@ -115,15 +122,22 @@ final class AppModel {
         engine.setOutputEnabled(outputEnabled)
         engine.start()
         midi.start(listensToEverything: listensToAllMIDI)
+        // Once per Mac, for a show saved before the blinders sat at 1%.
+        if !defaults.bool(forKey: "blinderFloorApplied") {
+            edit { $0.liftBlindersToFloor() }
+            defaults.set(true, forKey: "blinderFloorApplied")
+        }
         // Back to what was up before the app quit, so a restart mid-service
         // doesn't drop the room to black.
         if let id = defaults.string(forKey: "liveCue"), let cue = cue(id) {
             go(cue, fade: 2)
         }
         watchNetworks()
+        applyClaude()
     }
 
     func shutdown() {
+        mcpHost?.stop()
         saveNow()
         engine.shutdown()
         monitor.stop()
@@ -363,6 +377,64 @@ final class AppModel {
         screensColor = nil
     }
 
+    // MARK: Claude
+
+    /// On: Claude can run Prism over the network with the key, through the
+    /// MCP tools in PrismTools. Off by default; Settings › Claude turns it on.
+    var claudeEnabled: Bool { didSet { defaults.set(claudeEnabled, forKey: "claude"); applyClaude() } }
+    private(set) var claudeKey: String
+    private(set) var claudeState = "Off"
+    private(set) var claudePort = MCPHost.defaultPort
+    @ObservationIgnored private var mcpHost: MCPHost?
+
+    /// Where Claude reaches Prism: this Mac's Bonjour name, which survives
+    /// the router handing out a new address.
+    var claudeURL: String {
+        let name = SCDynamicStoreCopyLocalHostName(nil).map { "\($0 as String).local" }
+            ?? networks.first?.address ?? "127.0.0.1"
+        return "http://\(name):\(claudePort)/mcp"
+    }
+
+    /// Pasted into Terminal on the Mac with Claude Code. --scope user makes
+    /// Prism available in every folder, not just the one it was run in.
+    var claudeSetupCommand: String {
+        "claude mcp add --scope user --transport http prism \(claudeURL) --header \"Authorization: Bearer \(claudeKey)\""
+    }
+
+    /// The old key stops working at once.
+    func newClaudeKey() {
+        var bytes = [UInt8](repeating: 0, count: 24)
+        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        claudeKey = "prism_" + Data(bytes).base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+        Keychain.write(claudeKey, service: Keychain.claude)
+        mcpHost?.setKey(claudeKey)
+    }
+
+    private func applyClaude() {
+        guard claudeEnabled else {
+            mcpHost?.stop()
+            claudeState = "Off"
+            return
+        }
+        if claudeKey.isEmpty { newClaudeKey() }
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+        let host = mcpHost ?? MCPHost(server: PrismTools.server(control: self, version: version), key: claudeKey)
+        mcpHost = host
+        host.setKey(claudeKey)
+        claudeState = "Starting…"
+        host.start(port: claudePort) { [weak self] state in
+            Task { @MainActor in
+                guard let self, self.claudeEnabled else { return }
+                self.claudeState = switch state {
+                case .ready(let port): "Listening on port \(port)"
+                case .failed(let message): message
+                }
+            }
+        }
+    }
+
     // MARK: Network
 
     var activeNetworks: [NetworkInterface] {
@@ -406,5 +478,28 @@ final class AppModel {
         } catch {
             saveError = "Couldn't save the show: \(error.localizedDescription)"
         }
+    }
+}
+
+/// Claude's tools work through these, the same paths as the window.
+extension AppModel: PrismControl {
+    func status() -> PrismStatus {
+        PrismStatus(
+            midiInputs: midiStatus.connected,
+            otherSourcesSending: otherSources.map(\.name),
+            networks: activeNetworks.map { "\($0.name) \($0.address)" },
+            screensColor: screensColor?.hex,
+            screensProblem: screensProblem)
+    }
+
+    func go(cueID: String, fade: Double?) {
+        if let cue = cue(cueID) { go(cue, fade: fade) }
+    }
+
+    func editShow(_ change: (inout Show) -> Void) { edit(change) }
+
+    func deleteCue(_ id: String) -> Bool {
+        delete(id)
+        return cue(id) == nil
     }
 }

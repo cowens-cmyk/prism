@@ -9,6 +9,8 @@ struct SettingsView: View {
     @State private var hostDraft = ""
     @State private var keyDraft = ""
     @State private var checkResult: String?
+    @State private var confirmNewKey = false
+    @State private var copied = false
     @FocusState private var unicastFocused: Bool
 
     var body: some View {
@@ -84,6 +86,35 @@ struct SettingsView: View {
                     }
                 }
                 Text("In Screens: Settings › Integrations › Remote & API. Turn it on, then Manage Keys… and create a Watch key for Prism. Use 127.0.0.1 when Screens runs on this Mac.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Claude") {
+                Toggle("Let Claude control Prism", isOn: $model.claudeEnabled)
+                if model.claudeEnabled {
+                    LabeledContent("Status") { Text(model.claudeState) }
+                    LabeledContent("Address") {
+                        Text(model.claudeURL)
+                            .textSelection(.enabled)
+                    }
+                    HStack {
+                        Button(copied ? "Copied" : "Copy Setup Command") {
+                            NSPasteboard.general.clearContents()
+                            NSPasteboard.general.setString(model.claudeSetupCommand, forType: .string)
+                            copied = true
+                        }
+                        Button("New Key…") { confirmNewKey = true }
+                            .confirmationDialog("Make a new key?", isPresented: $confirmNewKey) {
+                                Button("New Key", role: .destructive) {
+                                    model.newClaudeKey()
+                                    copied = false
+                                }
+                            } message: {
+                                Text("Claude stops reaching Prism until the setup command is run again with the new key.")
+                            }
+                    }
+                }
+                Text("Run the copied command in Terminal on the Mac with Claude Code, then ask Claude to change the lights. The key is in the command: anyone with it can change the lights.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

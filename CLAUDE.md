@@ -11,7 +11,9 @@ user-facing text is short, plain and factual.
   `Engine.swift` (render, crossfade, the 40 Hz engine), `SACN.swift`
   (packets, sender, the monitor that spots Lightkey), `ImagePalette.swift`
   (colours from a picture or video), `ShowStore.swift` (the show on disk,
-  MIDI note decoding).
+  MIDI note decoding), `PrismTools.swift` (Claude's MCP tools, over the
+  `PrismControl` protocol the app model adopts), `MCPServer.swift` (JSON-RPC)
+  and `MCPHost.swift` (the HTTP server on port 6990 and its key).
 - `App` — SwiftUI and CoreMIDI only. `AppModel` owns the engine; every edit
   goes through `AppModel.update(_:)`.
 - `tools/import-lightkey.py` — regenerates `DefaultShow.json` from a
@@ -36,6 +38,11 @@ user-facing text is short, plain and factual.
   importer's docstring); reading presets last-wins leaves the songs dark.
 - `Show.version` stays 1; new cue fields are optional and decode
   leniently (`Cue.init(from:)`).
+- The blinders sit at 1% in every cue but Blackout (`Show.blinderFloor`;
+  the importer does the same, and a saved show is lifted once per Mac).
+- Claude's server answers nothing without the key, and is off until
+  Settings › Claude turns it on. Every tool edits through
+  `AppModel.editShow`, the same path as the window.
 - Screens' colour on a matched song (`AppModel.screensColor`) is never
   written into the cue unless the operator presses Keep This Colour.
 
@@ -53,7 +60,8 @@ Keep derived data outside ~/Desktop (iCloud breaks codesign). UI scripting
 isn't allowed on the dev Mac, so Debug builds take launch switches for
 screenshots and tests: `HL_OPEN_COLOR=1` opens the first SlimPAR colour
 picker, `HL_WINDOW=1300x1000` sizes the window, `HL_SCREENS_KEY=…` sets the
-Screens key without the keychain. Quitting asks first while a cue is up, so
+Screens key without the keychain, `HL_CLAUDE_KEY=…` and `HL_CLAUDE_PORT=…`
+set Claude's key and port the same way. Quitting asks first while a cue is up, so
 a test harness stops the app with `pkill -x "Prism"`.
 
 Song matching needs Screens' `GET /v1/show/frames/background` (Screens

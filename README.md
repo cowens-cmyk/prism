@@ -52,7 +52,7 @@ gets 73. Prism uses the same notes, so in Screens:
 
 1. Open **Settings › Lightkey & MIDI**.
 2. Choose **This Mac** if Prism runs on the Screens Mac. Otherwise
-   choose **Another Mac** and enter the address and port from Prism'
+   choose **Another Mac** and enter the address and port from Prism's
    Settings › Screens.
 3. Turn on **Change Lightkey scenes with the service**.
 4. Use **Add Cue…** to add a **Recognition** row.
@@ -76,6 +76,25 @@ note that arrives (press Send on that row in Screens); it gives up after 30
 seconds. Songs past Song 5 use the
 Song 5 cue; Screens does that itself.
 
+## Claude
+
+Claude can run Prism: list and read cues, put one up, set colours,
+brightness and fades, add, copy, move and delete cues, and turn following
+Screens or sending to the lights on or off. Prism serves these as MCP tools
+at `http://<this Mac>.local:6990/mcp`, behind a key.
+
+1. In Prism: **Settings › Claude**, turn on **Let Claude control Prism**.
+2. **Copy Setup Command**, and run it in Terminal on the Mac with Claude
+   Code. It adds Prism for every folder (`--scope user`).
+3. Ask Claude, e.g. "make the Song 2 SlimPARs purple at 70%".
+
+The key is in the copied command; anyone with it can change the lights.
+**New Key…** shuts out the old one. If the Mac's firewall is on, allow
+Prism's incoming connections when macOS asks. Deleting a cue asks Claude
+to check with you first, and the live cue can't be deleted.
+
+The tools are in `PrismTools.swift`; `MCPHost.swift` is the HTTP server.
+
 ## The rig
 
 From the Lightkey project "Hope NEW - FINAL", sent as sACN (E1.31) on
@@ -90,7 +109,7 @@ addresses).
 | Floor SlimPARs | U13–U16 | 1 / 234–281 |
 | Pixel Stix | FX1 driver (7-ch) + P1–P16 (RGB) | 1 / 1–55 |
 | Wall Wash | B1–B4, ProBar AR1.d | 1 / 60–83 |
-| Blinders | BL1–BL4, ProBlind4 | 1 / 290–305 |
+| Blinders | BL1–BL4, ProBlind4, 1% in every cue but Blackout | 1 / 290–305 |
 | Front Wash | DW1–DW6, ProWashPlus | 1 / 310–315 |
 | Rear Wash | DW7–DW8 | 1 / 316–317 |
 | Stage Spots | E1, E4, EVE E-50Z | 1 / 318, 327 |
