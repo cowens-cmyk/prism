@@ -300,3 +300,19 @@ struct SongSlimparTests {
         #expect(show.cue("walkIn")?.looks["screenSlimpars"]?.level == 0.25)
     }
 }
+
+struct MatchingDefaultTests {
+    @Test func songsAndCountdownMatchScreensAndNothingElse() {
+        var shows = [Show.bundledDefault()]
+        var saved = Show.bundledDefault()
+        for index in saved.cues.indices { saved.cues[index].matchesScreens = index % 2 == 0 }
+        saved.applyMatchingDefaults()
+        shows.append(saved)
+        for show in shows {
+            for cue in show.cues {
+                let wanted = cue.isSong || cue.id == "countdown"
+                #expect(cue.followsScreensBackground == wanted, "\(cue.name)")
+            }
+        }
+    }
+}

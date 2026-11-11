@@ -24,7 +24,8 @@ moves.
   included) at the levels the cue sets. A dark or black-and-white
   background leaves the cue's own colour up. It isn't saved into the cue, since
   next week's song has another background; **Keep This Colour** saves it.
-  It's on for the Song cues and off for the rest; the switch under "Colour
+  It's on for the Song cues and the Countdown and off for the rest; it needs
+  Screens' access key in Settings, and the cue says so when it's missing; the switch under "Colour
   from a slide" changes that per cue. Needs Screens' Local API (see below).
 - **Fade:** how long the cue takes to come up from whatever was showing.
 - **Blackout:** the moon button in the toolbar (⇧⌘B).

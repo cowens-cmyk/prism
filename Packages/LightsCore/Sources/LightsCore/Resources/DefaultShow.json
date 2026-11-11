@@ -92,6 +92,7 @@
           "level": 1.0
         }
       },
+      "matchesScreens": true,
       "name": "Countdown",
       "note": 61,
       "screensPosition": "countdown"
@@ -140,6 +141,7 @@
           "level": 1.0
         }
       },
+      "matchesScreens": true,
       "name": "Song 1",
       "note": 62,
       "screensPosition": "song1"
@@ -236,6 +238,7 @@
           "level": 1.0
         }
       },
+      "matchesScreens": true,
       "name": "Song 2",
       "note": 63,
       "screensPosition": "song2"
@@ -284,6 +287,7 @@
           "level": 1.0
         }
       },
+      "matchesScreens": true,
       "name": "Song 3",
       "note": 64,
       "screensPosition": "song3"
@@ -332,6 +336,7 @@
           "level": 1.0
         }
       },
+      "matchesScreens": true,
       "name": "Song 4",
       "note": 65,
       "screensPosition": "song4"
@@ -428,6 +433,7 @@
           "level": 1.0
         }
       },
+      "matchesScreens": true,
       "name": "Song 5",
       "note": 66,
       "screensPosition": "song5"

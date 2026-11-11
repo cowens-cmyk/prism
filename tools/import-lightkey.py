@@ -149,6 +149,8 @@ def main(path):
         show["cues"].append({
             "id": position, "name": name, "screensPosition": position, "note": note,
             "fade": cue["fadeInDuration"], "looks": groups,
+            # The songs and the countdown take their colour from Screens.
+            **({"matchesScreens": True} if position.startswith("song") or position == "countdown" else {}),
         })
     show["cues"].append({
         "id": "blackout", "name": "Blackout", "fade": 0.0,

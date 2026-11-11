@@ -254,6 +254,10 @@ struct PictureCard: View {
                     .buttonStyle(.glass)
                     .help("Save it into the cue, so it stays when Screens' background changes")
             }
+        } else if follows, !model.screensAPI.isSetUp {
+            Label("Needs Screens' access key: Prism › Settings › Songs match Screens' background.", systemImage: "exclamationmark.triangle.fill")
+                .font(.callout)
+                .foregroundStyle(.orange)
         } else if follows, model.liveCueID == cue.id, let problem = model.screensProblem {
             Label(problem, systemImage: "exclamationmark.triangle.fill")
                 .font(.callout)

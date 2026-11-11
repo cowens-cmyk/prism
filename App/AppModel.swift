@@ -127,6 +127,10 @@ final class AppModel {
             edit { $0.liftBlindersToFloor() }
             defaults.set(true, forKey: "blinderFloorApplied")
         }
+        if !defaults.bool(forKey: "matchingDefaultsApplied") {
+            edit { $0.applyMatchingDefaults() }
+            defaults.set(true, forKey: "matchingDefaultsApplied")
+        }
         if !defaults.bool(forKey: "songSlimparsDimmed") {
             edit { [rig] in $0.dimSongSlimpars(rig: rig) }
             defaults.set(true, forKey: "songSlimparsDimmed")
@@ -172,6 +176,9 @@ final class AppModel {
         // cue in the room, whether Screens, Claude or a click put it up.
         selectedCueID = cue.id
         defaults.set(cue.id, forKey: "liveCue")
+        // However the cue went up (Screens, a click, Claude, a relaunch), a
+        // cue that matches Screens asks for the background on screen now.
+        if cue.followsScreensBackground { matchScreensBackground(for: cue.id) }
     }
 
     func go(id: String?) {
@@ -318,7 +325,6 @@ final class AppModel {
             learningCueID = nil
         case .fire(let id):
             go(id: id)
-            if cue(id)?.followsScreensBackground == true { matchScreensBackground(for: id) }
         case .ignore:
             if learningCueID != nil { learningCueID = nil }
         }
@@ -352,7 +358,10 @@ final class AppModel {
     func matchScreensBackground(for cueID: String) {
         matchTask?.cancel()
         let api = screensAPI
-        guard api.isSetUp else { return }
+        guard api.isSetUp else {
+            screensProblem = "Prism needs Screens' access key to match: Settings › Songs match Screens' background."
+            return
+        }
         matchTask = Task { @MainActor [weak self] in
             var lastFailure: ScreensAPI.Failure = .noBackground
             attempts: for delay in [0.15, 0.35, 0.6, 1.0] {

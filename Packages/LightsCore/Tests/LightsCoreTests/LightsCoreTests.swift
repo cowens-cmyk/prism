@@ -822,7 +822,8 @@ final class FakeScreens: @unchecked Sendable {
         let show = Show.bundledDefault()
         #expect(show.cue("song1")!.followsScreensBackground)
         #expect(show.cue("song5")!.followsScreensBackground)
-        for id in ["walkIn", "countdown", "announcements", "message", "walkout", "blackout"] {
+        #expect(show.cue("countdown")!.followsScreensBackground)
+        for id in ["walkIn", "announcements", "message", "walkout", "blackout"] {
             #expect(!show.cue(id)!.followsScreensBackground, "\(id)")
         }
         var message = show.cue("message")!

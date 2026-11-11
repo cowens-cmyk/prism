@@ -102,6 +102,16 @@ extension Show {
         }
     }
 
+    /// Hope matches Screens' background in the five songs and the countdown,
+    /// and nowhere else. Applied once to a saved show; after that each cue's
+    /// switch is the operator's.
+    public mutating func applyMatchingDefaults() {
+        for index in cues.indices {
+            let cue = cues[index]
+            cues[index].matchesScreens = cue.isSong || cue.screensPosition == "countdown" ? true : nil
+        }
+    }
+
     /// The SlimPARs in the songs sit at 10%; Lightkey's 25% was too bright.
     public static let songSlimparLevel = 0.10
     /// What the songs' SlimPARs were before that change.
