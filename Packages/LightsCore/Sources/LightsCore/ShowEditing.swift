@@ -102,6 +102,24 @@ extension Show {
         }
     }
 
+    /// The SlimPARs in the songs sit at 10%; Lightkey's 25% was too bright.
+    public static let songSlimparLevel = 0.10
+    /// What the songs' SlimPARs were before that change.
+    static let oldSongSlimparLevel = 0.25
+
+    /// For a show saved before the change: a song's SlimPAR group still at the
+    /// old 25% drops to 10%. A level someone set by hand stays.
+    public mutating func dimSongSlimpars(rig: Rig) {
+        for index in cues.indices where cues[index].isSong {
+            for group in rig.groups where group.isSlimpar {
+                guard var look = cues[index].looks[group.id],
+                      abs(look.level - Self.oldSongSlimparLevel) < 0.001 else { continue }
+                look.level = Self.songSlimparLevel
+                cues[index].looks[group.id] = look
+            }
+        }
+    }
+
     /// Screens gives a row added to its table the lowest free note above its
     /// defaults (60–72); so does this.
     public func nextFreeNote() -> Int {

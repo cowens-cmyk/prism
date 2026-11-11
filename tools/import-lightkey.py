@@ -38,6 +38,9 @@ GROUPS = {
     "blinders": ["BL1", "BL2", "BL3", "BL4"],
 }
 BLINDER_FLOOR = 0.01
+# Lightkey ran the SlimPARs at 25% in the songs; Hope wants them at 10%.
+SONG_SLIMPAR_LEVEL = 0.10
+SLIMPAR_GROUPS = ("screenSlimpars", "ceilingSlimpars", "floorSlimpars")
 BRIGHTNESS_ONLY = {"frontWash", "rearWash", "stageSpots", "floorSpots", "blinders"}
 
 # (Lightkey cue, our name, Screens position, Screens' default note).
@@ -139,6 +142,10 @@ def main(path):
             groups[group] = entry
         # Hope keeps the blinders glowing at 1% in every cue but Blackout.
         groups["blinders"]["level"] = max(groups["blinders"]["level"], BLINDER_FLOOR)
+        if position.startswith("song"):
+            for group in SLIMPAR_GROUPS:
+                if groups[group]["level"] > 0:
+                    groups[group]["level"] = SONG_SLIMPAR_LEVEL
         show["cues"].append({
             "id": position, "name": name, "screensPosition": position, "note": note,
             "fade": cue["fadeInDuration"], "looks": groups,

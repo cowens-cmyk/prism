@@ -127,6 +127,10 @@ final class AppModel {
             edit { $0.liftBlindersToFloor() }
             defaults.set(true, forKey: "blinderFloorApplied")
         }
+        if !defaults.bool(forKey: "songSlimparsDimmed") {
+            edit { [rig] in $0.dimSongSlimpars(rig: rig) }
+            defaults.set(true, forKey: "songSlimparsDimmed")
+        }
         // Back to what was up before the app quit, so a restart mid-service
         // doesn't drop the room to black.
         if let id = defaults.string(forKey: "liveCue"), let cue = cue(id) {

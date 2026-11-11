@@ -274,3 +274,29 @@ struct MCPHostTests {
         #expect(try await post(call, key: "prism_new").0 == 200)
     }
 }
+
+struct SongSlimparTests {
+    @Test func songsStartWithSlimparsAtTenPercent() {
+        let show = Show.bundledDefault()
+        for cue in show.cues where cue.isSong {
+            for group in Rig.hope.groups where group.isSlimpar {
+                #expect(cue.look(for: group).level == 0.1, "\(cue.name) \(group.name)")
+            }
+        }
+        #expect(show.cue("closing")?.looks["screenSlimpars"]?.level == 0.5)
+    }
+
+    @Test func aSavedShowDimsOnlyTheOldLevel() {
+        var show = Show.bundledDefault()
+        for index in show.cues.indices {
+            for id in ["screenSlimpars", "ceilingSlimpars", "floorSlimpars"] {
+                show.cues[index].looks[id]?.level = 0.25
+            }
+        }
+        show.cues[show.cues.firstIndex { $0.id == "song2" }!].looks["floorSlimpars"]?.level = 0.6
+        show.dimSongSlimpars(rig: .hope)
+        #expect(show.cue("song1")?.looks["screenSlimpars"]?.level == 0.1)
+        #expect(show.cue("song2")?.looks["floorSlimpars"]?.level == 0.6)
+        #expect(show.cue("walkIn")?.looks["screenSlimpars"]?.level == 0.25)
+    }
+}

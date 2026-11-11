@@ -83,8 +83,8 @@ import Testing
 
     @Test func song1MatchesLightkey() {
         let cue = Show.bundledDefault().cues.first { $0.id == "song1" }!
-        #expect(cue.looks["screenSlimpars"] == GroupLook(color: LightColor(hex: "#FF00E5"), level: 0.25))
-        #expect(cue.looks["ceilingSlimpars"] == GroupLook(color: LightColor(hex: "#0055FF"), level: 0.25))
+        #expect(cue.looks["screenSlimpars"] == GroupLook(color: LightColor(hex: "#FF00E5"), level: 0.1))
+        #expect(cue.looks["ceilingSlimpars"] == GroupLook(color: LightColor(hex: "#0055FF"), level: 0.1))
         #expect(cue.looks["frontWash"]?.level == 0.75)
         #expect(cue.fade == 5)
     }
@@ -116,10 +116,10 @@ import Testing
     @Test func song1Channels() {
         let cue = Show.bundledDefault().cues.first { $0.id == "song1" }!
         let frame = Renderer.frame(for: cue, rig: .hope)
-        // U1: dimmer 25%, pink, shutter open, everything else 0.
-        #expect(frame.channels(of: Rig.hope.fixture("U1")!) == [64, 255, 0, 229, 0, 0, 0, 0, 0, 0, 0, 0])
+        // U1: dimmer 10%, pink, shutter open, everything else 0.
+        #expect(frame.channels(of: Rig.hope.fixture("U1")!) == [26, 255, 0, 229, 0, 0, 0, 0, 0, 0, 0, 0])
         // U9: blue.
-        #expect(frame.channels(of: Rig.hope.fixture("U9")!) == [64, 0, 85, 255, 0, 0, 0, 0, 0, 0, 0, 0])
+        #expect(frame.channels(of: Rig.hope.fixture("U9")!) == [26, 0, 85, 255, 0, 0, 0, 0, 0, 0, 0, 0])
         // Front wash 75%.
         #expect(frame.value(universe: 1, address: 310) == 191)
         // Pixel Stix: driver open, white pixels.
@@ -520,7 +520,7 @@ final class ManualClock: @unchecked Sendable {
         }
         #expect(cue.look(for: Rig.hope.group("house")!).level == 0)
         show.setSlimparColor(.white, in: "song1", rig: .hope)
-        #expect(show.cue("song1")?.looks["screenSlimpars"]?.level == 0.25)
+        #expect(show.cue("song1")?.looks["screenSlimpars"]?.level == 0.1)
     }
 
     @Test func noteActions() {
@@ -729,8 +729,8 @@ final class LockedSink: FrameSink, @unchecked Sendable {
     @Test func glowsAreTheColoursOnInTheRoom() {
         let show = Show.bundledDefault()
         let song1 = show.cue("song1")!.glows(in: .hope)
-        #expect(song1.contains(Glow(color: LightColor(hex: "#FF00E5")!, level: 0.25)))
-        #expect(song1.contains(Glow(color: LightColor(hex: "#0055FF")!, level: 0.25)))
+        #expect(song1.contains(Glow(color: LightColor(hex: "#FF00E5")!, level: 0.1)))
+        #expect(song1.contains(Glow(color: LightColor(hex: "#0055FF")!, level: 0.1)))
         // White is on in several groups; it counts once, at the brightest.
         #expect(song1.filter { $0.color == .white }.map(\.level) == [1])
         #expect(show.cue("blackout")!.glows(in: .hope).isEmpty)

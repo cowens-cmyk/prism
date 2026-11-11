@@ -40,6 +40,8 @@ user-facing text is short, plain and factual.
   leniently (`Cue.init(from:)`).
 - The blinders sit at 1% in every cue but Blackout (`Show.blinderFloor`;
   the importer does the same, and a saved show is lifted once per Mac).
+- The songs' SlimPARs start at 10% (`Show.songSlimparLevel`; the importer
+  too). A saved show's songs still at Lightkey's 25% drop once per Mac.
 - Claude's server answers nothing without the key, and is off until
   Settings › Claude turns it on. Every tool edits through
   `AppModel.editShow`, the same path as the window.

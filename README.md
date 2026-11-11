@@ -120,7 +120,7 @@ addresses).
 
 | Group | Fixtures | Universe / address |
 | --- | --- | --- |
-| Screen SlimPARs | U1–U8, SlimPAR Pro H 12-ch | 1 / 90–185 |
+| Screen SlimPARs | U1–U8, SlimPAR Pro H 12-ch (10% in the songs) | 1 / 90–185 |
 | Ceiling SlimPARs | U9–U12 | 1 / 186–233 |
 | Floor SlimPARs | U13–U16 | 1 / 234–281 |
 | Pixel Stix | FX1 driver (7-ch) + P1–P16 (RGB) | 1 / 1–55 |

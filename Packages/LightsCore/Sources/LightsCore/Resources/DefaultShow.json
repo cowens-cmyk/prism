@@ -105,11 +105,11 @@
         },
         "ceilingSlimpars": {
           "color": "#0055FF",
-          "level": 0.25
+          "level": 0.1
         },
         "floorSlimpars": {
           "color": "#FF00E5",
-          "level": 0.25
+          "level": 0.1
         },
         "floorSpots": {
           "level": 0.0
@@ -130,7 +130,7 @@
         },
         "screenSlimpars": {
           "color": "#FF00E5",
-          "level": 0.25
+          "level": 0.1
         },
         "stageSpots": {
           "level": 0.75
@@ -201,11 +201,11 @@
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",
-          "level": 0.25
+          "level": 0.1
         },
         "floorSlimpars": {
           "color": "#FFFFFF",
-          "level": 0.25
+          "level": 0.1
         },
         "floorSpots": {
           "level": 0.0
@@ -226,7 +226,7 @@
         },
         "screenSlimpars": {
           "color": "#FFFFFF",
-          "level": 0.25
+          "level": 0.1
         },
         "stageSpots": {
           "level": 0.75
@@ -249,11 +249,11 @@
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",
-          "level": 0.25
+          "level": 0.1
         },
         "floorSlimpars": {
           "color": "#00FFDD",
-          "level": 0.25
+          "level": 0.1
         },
         "floorSpots": {
           "level": 0.0
@@ -274,7 +274,7 @@
         },
         "screenSlimpars": {
           "color": "#0055FF",
-          "level": 0.25
+          "level": 0.1
         },
         "stageSpots": {
           "level": 0.75
@@ -297,11 +297,11 @@
         },
         "ceilingSlimpars": {
           "color": "#1300FF",
-          "level": 0.25
+          "level": 0.1
         },
         "floorSlimpars": {
           "color": "#FFFFFF",
-          "level": 0.25
+          "level": 0.1
         },
         "floorSpots": {
           "level": 0.0
@@ -322,7 +322,7 @@
         },
         "screenSlimpars": {
           "color": "#1000FF",
-          "level": 0.25
+          "level": 0.1
         },
         "stageSpots": {
           "level": 0.75
@@ -393,11 +393,11 @@
         },
         "ceilingSlimpars": {
           "color": "#FFFFFF",
-          "level": 0.25
+          "level": 0.1
         },
         "floorSlimpars": {
           "color": "#FFFFFF",
-          "level": 0.25
+          "level": 0.1
         },
         "floorSpots": {
           "level": 0.0
@@ -418,7 +418,7 @@
         },
         "screenSlimpars": {
           "color": "#FFFFFF",
-          "level": 0.25
+          "level": 0.1
         },
         "stageSpots": {
           "level": 0.5
