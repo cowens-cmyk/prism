@@ -60,6 +60,12 @@ gets 73. Prism uses the same notes, so in Screens:
    Screens › MIDI channel changes it. Notes on other channels are ignored,
    so a keyboard on the network can't fire Walk-in.
 
+Screens sends a note only when a plan item goes live while presenting, not
+when it's clicked in the plan. To check the link on its own, press **Send** on
+a row of Screens' cue table: Prism should go to that cue. The status at the
+top of Prism's window names the last cue Screens sent, or the channel Screens
+is using if it isn't the one Prism listens on.
+
 For songs to match their backgrounds, Prism reads the live
 background from Screens' Local API (`GET /v1/show/frames/background`, in
 Screens 0.28.0; Screens after 0.28.0 also skips a video's black opening):

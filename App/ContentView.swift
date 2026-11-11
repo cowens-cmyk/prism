@@ -90,6 +90,9 @@ struct OutputStatus: View {
 
     private var screens: String {
         guard model.followsScreens else { return "Not following Screens" }
+        if let wrong = model.wrongChannel, Date().timeIntervalSince(wrong.at) < 600 {
+            return "Screens sends on channel \(wrong.channel), Prism listens on \(model.midiChannel)"
+        }
         if let last = model.lastNote, Date().timeIntervalSince(last.at) < 3600 {
             let cue = model.show.cue(forNote: last.note)?.name ?? "note \(last.note)"
             return "Screens: \(cue)"

@@ -294,8 +294,16 @@ final class AppModel {
 
     // MARK: Screens
 
+    /// A note that arrived on another channel than the one Prism listens on,
+    /// so the window can say so instead of looking like nothing came.
+    private(set) var wrongChannel: (channel: Int, at: Date)?
+
     private func handle(note: Int, channel: Int, source: String) {
-        guard MIDINote.accepts(channel: channel, listeningOn: midiChannel == 0 ? nil : midiChannel) else { return }
+        guard MIDINote.accepts(channel: channel, listeningOn: midiChannel == 0 ? nil : midiChannel) else {
+            wrongChannel = (channel, Date())
+            return
+        }
+        wrongChannel = nil
         lastNote = (note, source, Date())
         switch show.action(forNote: note, learning: learningCueID, followsScreens: followsScreens) {
         case .learn(let id):
