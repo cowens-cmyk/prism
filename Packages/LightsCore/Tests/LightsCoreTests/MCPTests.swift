@@ -316,3 +316,111 @@ struct MatchingDefaultTests {
         }
     }
 }
+
+struct ScreensSignatureTests {
+    @Test func changesWithTheSlideAndTheMediaOnly() {
+        let base: [String: Any] = [
+            "liveSlide": ["presentationId": "p", "slideId": "s1", "text": "Verse"],
+            "mediaLayers": ["background": ["mediaId": "m1"], "foreground": ["mediaId": "m2"]],
+            "nextSlideText": "a",
+        ]
+        var sameButText = base
+        sameButText["nextSlideText"] = "b"
+        var nextSlide = base
+        nextSlide["liveSlide"] = ["presentationId": "p", "slideId": "s2"]
+        var newVideo = base
+        newVideo["mediaLayers"] = ["background": ["mediaId": "m9"], "foreground": ["mediaId": "m2"]]
+        let a = ScreensAPI.signature(of: base)
+        #expect(a == ScreensAPI.signature(of: sameButText))
+        #expect(a != ScreensAPI.signature(of: nextSlide))
+        #expect(a != ScreensAPI.signature(of: newVideo))
+        #expect(ScreensAPI.signature(of: [:]) == "/|")
+    }
+}
+
+/// Screens as the follower sees it: a script of what's live on each read.
+final class ScriptedScreens: @unchecked Sendable {
+    let lock = NSLock()
+    var signatures: [Result<String, ScreensAPI.Failure>]
+    var backgrounds: [String: Result<Data, ScreensAPI.Failure>]
+    var current = "old"
+    var backgroundReads = 0
+    var reads = 0
+
+    init(_ signatures: [Result<String, ScreensAPI.Failure>], _ backgrounds: [String: Result<Data, ScreensAPI.Failure>]) {
+        self.signatures = signatures
+        self.backgrounds = backgrounds
+    }
+
+    func follower() -> ScreensFollower {
+        ScreensFollower(
+            signature: { self.lock.withLock {
+                self.reads += 1
+                let next = self.signatures.isEmpty ? .success(self.current) : self.signatures.removeFirst()
+                if case .success(let s) = next { self.current = s }
+                return next
+            } },
+            background: { self.lock.withLock {
+                self.backgroundReads += 1
+                return self.backgrounds[self.current] ?? .failure(.noBackground)
+            } },
+            pause: { _ in await Task.yield() },
+            color: { data in LightColor(hex: String(decoding: data, as: UTF8.self)) })
+    }
+}
+
+@MainActor
+struct ScreensFollowerTests {
+    func run(_ screens: ScriptedScreens, stale: String?, reads: Int) async -> [ScreensFollower.Event] {
+        var events: [ScreensFollower.Event] = []
+        await screens.follower().run(
+            stale: stale,
+            stillLive: { screens.lock.withLock { screens.reads < reads } },
+            followed: { _ in },
+            send: { if case .color = $0 { events.append($0) } })
+        return events
+    }
+
+    @Test func waitsForTheNewSlideInsteadOfTheOldOne() async {
+        // The note lands while the old song's slide is still up.
+        let screens = ScriptedScreens(
+            [.success("old"), .success("old"), .success("new")],
+            ["old": .success(Data("#00FF00".utf8)), "new": .success(Data("#8000FF".utf8))])
+        let events = await run(screens, stale: "old", reads: 6)
+        #expect(events == [.color(LightColor(hex: "#8000FF"))])
+    }
+
+    @Test func followsABackgroundThatChangesMidSong() async {
+        let screens = ScriptedScreens(
+            [.success("a"), .success("a"), .success("b"), .success("b"), .success("c")],
+            ["a": .success(Data("#FF0000".utf8)), "b": .success(Data("#0000FF".utf8)), "c": .success(Data("#0000FF".utf8))])
+        let events = await run(screens, stale: nil, reads: 8)
+        #expect(events == [.color(LightColor(hex: "#FF0000")), .color(LightColor(hex: "#0000FF"))])
+        // Asked again only when the slide changed: a, b, c.
+        #expect(screens.backgroundReads == 3)
+    }
+
+    @Test func aSlideWithoutABackgroundKeepsTheColour() async {
+        let screens = ScriptedScreens(
+            [.success("a"), .success("blank")],
+            ["a": .success(Data("#FF0000".utf8))])
+        let events = await run(screens, stale: nil, reads: 5)
+        #expect(events == [.color(LightColor(hex: "#FF0000"))])
+    }
+
+    @Test func aDarkBackgroundHandsBackTheCuesColour() async {
+        let screens = ScriptedScreens(
+            [.success("a"), .success("dark")],
+            ["a": .success(Data("#FF0000".utf8)), "dark": .success(Data("not a colour".utf8))])
+        let events = await run(screens, stale: nil, reads: 5)
+        #expect(events == [.color(LightColor(hex: "#FF0000")), .color(nil)])
+    }
+
+    @Test func theOldSlideCountsAfterItsGrace() async {
+        // Screens really is still on the slide that was up: after the grace
+        // period it's taken, rather than leaving the cue unmatched.
+        let screens = ScriptedScreens([], ["old": .success(Data("#00FF00".utf8))])
+        let events = await run(screens, stale: "old", reads: 20)
+        #expect(events == [.color(LightColor(hex: "#00FF00"))])
+    }
+}

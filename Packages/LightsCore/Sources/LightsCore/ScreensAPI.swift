@@ -63,15 +63,43 @@ public struct ScreensAPI: Sendable, Equatable {
 
     /// A small JPEG of the live background: a video's poster frame, or the picture.
     public func background(session: URLSession = .shared) async -> Result<CGImage, Failure> {
-        switch await get("/v1/show/frames/background", session: session) {
-        case .failure(let failure):
-            return .failure(failure)
-        case .success(let data):
-            guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-                  let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
-            else { return .failure(.unreadable) }
-            return .success(image)
+        await backgroundJPEG(session: session).flatMap(Self.image(from:))
+    }
+
+    /// The background's JPEG as Screens sends it, so a caller can tell a
+    /// new background from the same one asked for again.
+    public func backgroundJPEG(session: URLSession = .shared) async -> Result<Data, Failure> {
+        await get("/v1/show/frames/background", session: session)
+    }
+
+    public static func image(from data: Data) -> Result<CGImage, Failure> {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
+        else { return .failure(.unreadable) }
+        return .success(image)
+    }
+
+    /// What's live in Screens, as a short string that changes when the
+    /// background can: the live slide and the media on each layer. It is a
+    /// small JSON read, cheap enough to ask every second, where rendering the
+    /// background is not.
+    public func liveSignature(session: URLSession = .shared) async -> Result<String, Failure> {
+        await get("/v1/status", session: session).flatMap { data in
+            guard let status = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                return .failure(.unreadable)
+            }
+            return .success(Self.signature(of: status))
         }
+    }
+
+    static func signature(of status: [String: Any]) -> String {
+        let slide = status["liveSlide"] as? [String: Any]
+        let slidePart = [slide?["presentationId"], slide?["slideId"]].map { ($0 as? String) ?? "" }.joined(separator: "/")
+        let layers = (status["mediaLayers"] as? [String: Any]) ?? [:]
+        let mediaPart = layers.keys.sorted().map { key in
+            "\(key)=\(((layers[key] as? [String: Any])?["mediaId"] as? String) ?? "")"
+        }.joined(separator: ",")
+        return slidePart + "|" + mediaPart
     }
 
     /// Whether Screens answers with this key.

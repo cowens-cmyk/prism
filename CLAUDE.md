@@ -11,7 +11,8 @@ user-facing text is short, plain and factual.
   `Engine.swift` (render, crossfade, the 40 Hz engine), `SACN.swift`
   (packets, sender, the monitor that spots Lightkey), `ImagePalette.swift`
   (colours from a picture or video), `ShowStore.swift` (the show on disk,
-  MIDI note decoding), `PrismTools.swift` (Claude's MCP tools, over the
+  MIDI note decoding), `ScreensFollower.swift` (keeps a matching cue on
+  Screens' live background), `PrismTools.swift` (Claude's MCP tools, over the
   `PrismControl` protocol the app model adopts), `MCPServer.swift` (JSON-RPC)
   and `MCPHost.swift` (the HTTP server on port 6990 and its key).
 - `App` — SwiftUI and CoreMIDI only. `AppModel` owns the engine; every edit

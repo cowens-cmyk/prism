@@ -19,8 +19,10 @@ moves.
   a video) on a cue, in the list or on its drop box. The SlimPARs take its
   strongest colour, and the colours found in it appear beside the picture;
   click another one to use it instead.
-- **Songs match Screens:** when Screens starts a song, the SlimPARs take
-  the colour of that song's background (a motion background's frame
+- **Songs match Screens:** while a matching cue is live, the SlimPARs take
+  the colour of Screens' live background, and follow it when the slide or
+  its media changes (Prism reads what's live in Screens under a second
+  apart; the background is fetched only when it changes) (a motion background's frame
   included) at the levels the cue sets. A dark or black-and-white
   background leaves the cue's own colour up. It isn't saved into the cue, since
   next week's song has another background; **Keep This Colour** saves it.

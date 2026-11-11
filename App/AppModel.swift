@@ -198,6 +198,7 @@ final class AppModel {
             // one matched from Screens.
             let slimpars = rig.groups.filter(\.isSlimpar)
             if let liveBefore, slimpars.contains(where: { live.look(for: $0).color != liveBefore.look(for: $0).color }) {
+                matchTask?.cancel()
                 screensColor = nil
             }
             if let look = liveLook { engine.update(look) }
@@ -352,9 +353,14 @@ final class AppModel {
         return live.withSlimparColor(color, rig: rig)
     }
 
-    /// Screens sends the note as the item goes live; its background can land
-    /// a moment later, so this asks a few times before giving up. The colour
-    /// joins the cue's fade already under way rather than starting a new one.
+    /// What was live in Screens when the last cue stopped following it. A
+    /// new cue's note can arrive a moment before Screens shows the new slide;
+    /// that old slide's background must not colour the new cue.
+    @ObservationIgnored private var lastScreensSignature: String?
+    @ObservationIgnored private var liveSince = Date()
+
+    /// While a cue that matches Screens is live, its SlimPARs follow Screens'
+    /// background (see ScreensFollower).
     func matchScreensBackground(for cueID: String) {
         matchTask?.cancel()
         let api = screensAPI
@@ -362,33 +368,32 @@ final class AppModel {
             screensProblem = "Prism needs Screens' access key to match: Settings › Songs match Screens' background."
             return
         }
-        matchTask = Task { @MainActor [weak self] in
-            var lastFailure: ScreensAPI.Failure = .noBackground
-            attempts: for delay in [0.15, 0.35, 0.6, 1.0] {
-                try? await Task.sleep(for: .seconds(delay))
-                guard !Task.isCancelled else { return }
-                switch await api.background() {
-                case .success(let image):
-                    guard let self, !Task.isCancelled, self.liveCueID == cueID else { return }
-                    // A dark or black-and-white background leaves the cue's
-                    // own colour up, rather than turning the SlimPARs white.
-                    guard let color = ImagePalette.vividColors(in: image).first else {
-                        self.screensProblem = nil
-                        return
+        liveSince = Date()
+        let stale = lastScreensSignature
+        let follower = ScreensFollower(api: api)
+        matchTask = Task { @MainActor in
+            await follower.run(
+                stale: stale,
+                stillLive: { [weak self] in self?.liveCueID == cueID },
+                followed: { [weak self] in self?.lastScreensSignature = $0 },
+                send: { [weak self] event in
+                    switch event {
+                    case .color(let color): self?.takeScreensColor(color)
+                    case .problem(let problem): self?.screensProblem = problem
                     }
-                    self.screensColor = color
-                    self.screensProblem = nil
-                    if let look = self.liveLook { self.engine.update(look) }
-                    return
-                case .failure(let failure):
-                    lastFailure = failure
-                    // A wrong key or address won't fix itself in a second.
-                    if failure != .noBackground && failure != .unreachable { break attempts }
-                }
-            }
-            guard let self, !Task.isCancelled else { return }
-            self.screensProblem = lastFailure.message
+                })
         }
+    }
+
+    /// A dark or black-and-white background leaves the cue's own colour up,
+    /// rather than turning the SlimPARs white. A new colour joins the cue's
+    /// fade if it's still running, and otherwise eases in.
+    private func takeScreensColor(_ color: LightColor?) {
+        guard color?.hex != screensColor?.hex else { return }
+        screensColor = color
+        guard let look = liveLook else { return }
+        let remaining = look.fade - Date().timeIntervalSince(liveSince)
+        engine.go(look, fade: max(remaining, 1.5))
     }
 
     /// Writes the matched colour into the cue, for a song that should keep it.
