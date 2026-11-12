@@ -54,6 +54,13 @@ user-facing text is short, plain and factual.
   Screens changes slide doesn't take the previous slide's background.
 - Blackout (id `blackout`) can't be deleted: the toolbar button and ⇧⌘B
   go to it.
+- Every save also writes `Prism Show.json` on the Desktop
+  (`ShowStore.showFile`). The show in Application Support stays the one
+  that's loaded; the Desktop file is read only when there is none. A
+  Desktop that can't be written never fails the save.
+- A SlimPAR colour changed on a cue that matches Screens switches matching
+  off on that cue (`ScreensFollower.keepingHandColours`, applied in
+  `AppModel.edit`), so a picked colour isn't replaced at the next Go.
 
 ## Build and test
 

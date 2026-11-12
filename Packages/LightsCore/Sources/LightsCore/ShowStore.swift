@@ -4,17 +4,27 @@ import ImageIO
 import UniformTypeIdentifiers
 
 /// The show on disk: ~/Library/Application Support/Prism/Show.json,
-/// with dropped pictures in Images/ beside it.
+/// with dropped pictures in Images/ beside it, and a copy of the show the
+/// operator can see, back up and carry to another Mac: Prism Show.json on
+/// the Desktop, written with every save.
 public struct ShowStore: Sendable {
     public var folder: URL
+    /// The copy on the Desktop; nil keeps the show in `folder` only (tests).
+    public var showFile: URL?
 
-    public init(folder: URL) {
+    public static let showFileName = "Prism Show.json"
+
+    public init(folder: URL, showFile: URL? = nil) {
         self.folder = folder
+        self.showFile = showFile
     }
 
     public static var standard: ShowStore {
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return ShowStore(folder: support.appendingPathComponent("Prism", isDirectory: true))
+        let desktop = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
+        return ShowStore(
+            folder: support.appendingPathComponent("Prism", isDirectory: true),
+            showFile: desktop?.appendingPathComponent(showFileName))
     }
 
     public var showURL: URL { folder.appendingPathComponent("Show.json") }
@@ -26,7 +36,15 @@ public struct ShowStore: Sendable {
     /// The saved show, or the bundled one on a new install. A file that won't
     /// read is kept aside rather than overwritten, so nothing is lost.
     public func load() -> Show {
-        guard let data = try? Data(contentsOf: showURL) else { return .bundledDefault() }
+        guard let data = try? Data(contentsOf: showURL) else {
+            // Nothing saved on this Mac (a new one, or Prism reinstalled):
+            // the show file on the Desktop is the show, when it reads.
+            if let showFile, let copy = try? Data(contentsOf: showFile),
+               let show = try? JSONDecoder().decode(Show.self, from: copy), !show.cues.isEmpty {
+                return show.repaired()
+            }
+            return .bundledDefault()
+        }
         if let show = try? JSONDecoder().decode(Show.self, from: data), !show.cues.isEmpty {
             // Only a file that reads becomes the backup; a bad one copied
             // over it would lose the last good show.
@@ -39,11 +57,19 @@ public struct ShowStore: Sendable {
         return .bundledDefault()
     }
 
-    public func save(_ show: Show) throws {
+    /// Saves the show, and the copy on the Desktop. Returns whether the
+    /// Desktop copy was written: the show itself is safe either way, so a
+    /// Desktop that can't be written (macOS hasn't been allowed to) is
+    /// reported, not thrown.
+    @discardableResult
+    public func save(_ show: Show) throws -> Bool {
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(show).write(to: showURL, options: .atomic)
+        let data = try encoder.encode(show)
+        try data.write(to: showURL, options: .atomic)
+        guard let showFile else { return true }
+        return (try? data.write(to: showFile, options: .atomic)) != nil
     }
 
     /// A small JPEG copy of a dropped picture (or a video's frame), so the

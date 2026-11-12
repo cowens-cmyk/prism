@@ -7,6 +7,12 @@ moves.
 
 ## Using it
 
+- **Saving:** every change saves by itself; there is no Save. The toolbar
+  shows when it last saved. The show is also written to **Prism Show.json**
+  on the Desktop each time, to back up or carry to another Mac: a Mac with
+  no show of its own opens that file. macOS asks once to let Prism use the
+  Desktop folder.
+
 - **Go to a cue:** click ▶ next to it, or select it and press **Go** (⌘↩).
   The live cue is marked LIVE, and the right side switches to it whenever a
   cue goes up, from Screens or by hand.
@@ -25,7 +31,12 @@ moves.
   apart; the background is fetched only when it changes) (a motion background's frame
   included) at the levels the cue sets. A dark or black-and-white
   background leaves the cue's own colour up. It isn't saved into the cue, since
-  next week's song has another background; **Keep This Colour** saves it.
+  next week's song has another background; **Keep This Colour** saves it. A SlimPAR
+  colour you pick yourself on a matching cue (a swatch, a dropped picture,
+  Keep This Colour) is yours to keep: matching switches off for that cue,
+  so the colour is still there the next time it goes up instead of going
+  back to Screens' background. The cue's **Match Screens' background**
+  switch turns it on again.
   It's on for the Song cues and the Countdown, and only those can match: the
   walk-in, announcements, message, closing, walk-out, Communion, baptisms,
   Recognition and Blackout keep their own colours. It needs

@@ -140,6 +140,24 @@ public struct ScreensFollower: Sendable {
         return slimpars.contains { after.look(for: $0).color != before.look(for: $0).color } ? .stop : .none
     }
 
+    /// A SlimPAR colour picked by hand on a cue that matches Screens is the
+    /// operator's choice for that cue: matching is switched off on it, so
+    /// the colour is still there the next time the cue goes up (the 9:30
+    /// service, next Sunday) instead of going back to Screens' background.
+    /// The cue's Match Screens' background switch turns it on again.
+    public static func keepingHandColours(from before: Show, to after: Show, rig: Rig) -> Show {
+        var show = after
+        let slimpars = rig.groups.filter(\.isSlimpar)
+        for index in show.cues.indices {
+            let cue = show.cues[index]
+            guard cue.followsScreensBackground, let earlier = before.cue(cue.id), earlier.followsScreensBackground,
+                  slimpars.contains(where: { cue.look(for: $0).color != earlier.look(for: $0).color })
+            else { continue }
+            show.cues[index].matchesScreens = false
+        }
+        return show
+    }
+
     /// Going to the cue that's already live and following keeps the follower
     /// and its colour: starting over would put the cue's own colour up and
     /// wait out the slide that's still on screen, a visible swing mid-song.

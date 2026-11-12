@@ -33,6 +33,8 @@ final class AppModel {
     private(set) var otherSources: [SACNMonitor.Source] = []
     private(set) var networks: [NetworkInterface] = []
     private(set) var saveError: String?
+    /// When the show was last written, for the window's "Saved" note.
+    private(set) var lastSaved: Date?
 
     // MARK: Settings, per Mac
 
@@ -144,6 +146,9 @@ final class AppModel {
         }
         watchNetworks()
         applyClaude()
+        // The show file on the Desktop is there from the first launch, not
+        // only once something has been changed.
+        saveNow()
     }
 
     func shutdown() {
@@ -204,6 +209,8 @@ final class AppModel {
         var next = show
         change(&next)
         guard next != show else { return }
+        // A colour picked for a matching cue stays picked.
+        next = ScreensFollower.keepingHandColours(from: show, to: next, rig: rig)
         let liveBefore = show.cue(liveCueID)
         show = next
         if let live = show.cue(liveCueID), live != liveBefore {
@@ -580,8 +587,10 @@ final class AppModel {
 
     private func saveNow() {
         do {
-            try store.save(show)
-            saveError = nil
+            let onDesktop = try store.save(show)
+            lastSaved = Date()
+            saveError = onDesktop ? nil
+                : "Saved, but not to the Desktop. Allow Prism in System Settings › Privacy & Security › Files and Folders."
         } catch {
             saveError = "Couldn't save the show: \(error.localizedDescription)"
         }

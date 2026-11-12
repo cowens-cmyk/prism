@@ -75,6 +75,11 @@ struct OutputStatus: View {
                 .foregroundStyle(output.ok ? Color.secondary : Color.orange)
             Label(screens, systemImage: "rectangle.on.rectangle")
                 .foregroundStyle(.secondary)
+            if let saved = model.lastSaved {
+                Label("Saved \(saved.formatted(date: .omitted, time: .shortened))", systemImage: "checkmark.circle")
+                    .foregroundStyle(.secondary)
+                    .help("Every change saves by itself, to \(ShowStore.showFileName) on the Desktop.")
+            }
         }
         .labelStyle(.titleAndIcon)
         .font(.callout)

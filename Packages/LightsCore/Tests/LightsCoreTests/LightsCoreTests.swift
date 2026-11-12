@@ -865,3 +865,76 @@ final class FakeScreens: @unchecked Sendable {
 extension Result {
     var failure: Failure? { if case .failure(let f) = self { f } else { nil } }
 }
+
+
+@Suite struct ShowFileTests {
+    private func temp() throws -> URL {
+        let folder = FileManager.default.temporaryDirectory.appendingPathComponent("prism-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        return folder
+    }
+
+    @Test func everySaveAlsoWritesTheShowFile() throws {
+        let folder = try temp(), desktop = try temp()
+        let file = desktop.appendingPathComponent(ShowStore.showFileName)
+        let store = ShowStore(folder: folder.appendingPathComponent("Prism"), showFile: file)
+        var show = Show.bundledDefault()
+        show.cues[0].name = "Changed"
+        #expect(try store.save(show))
+        let onDesktop = try JSONDecoder().decode(Show.self, from: Data(contentsOf: file))
+        #expect(onDesktop.cues[0].name == "Changed")
+        #expect(store.load().cues[0].name == "Changed")
+    }
+
+    @Test func aMacWithNoShowOpensTheShowFile() throws {
+        let desktop = try temp()
+        let file = desktop.appendingPathComponent(ShowStore.showFileName)
+        var show = Show.bundledDefault()
+        show.cues[0].name = "From the Desktop"
+        try JSONEncoder().encode(show).write(to: file)
+        let store = ShowStore(folder: try temp().appendingPathComponent("Prism"), showFile: file)
+        #expect(store.load().cues[0].name == "From the Desktop")
+        // Once this Mac has its own, that one is the show.
+        show.cues[0].name = "Here"
+        try store.save(show)
+        try JSONEncoder().encode(Show.bundledDefault()).write(to: file)
+        #expect(store.load().cues[0].name == "Here")
+    }
+
+    @Test func aDesktopThatCantBeWrittenStillSavesTheShow() throws {
+        let store = ShowStore(
+            folder: try temp().appendingPathComponent("Prism"),
+            showFile: URL(fileURLWithPath: "/nonexistent-folder/\(ShowStore.showFileName)"))
+        var show = Show.bundledDefault()
+        show.cues[0].name = "Kept"
+        #expect(try store.save(show) == false)
+        #expect(store.load().cues[0].name == "Kept")
+    }
+
+    @Test func aColourPickedByHandOnAMatchingCueStaysPicked() throws {
+        let rig = Rig.hope
+        let before = Show.bundledDefault()
+        let song = try #require(before.cues.first { $0.followsScreensBackground })
+        let slimpar = try #require(rig.groups.first { $0.isSlimpar })
+
+        // Its colour changed: matching goes off on that cue, and only that one.
+        var edited = before
+        let index = try #require(edited.cues.firstIndex { $0.id == song.id })
+        edited.cues[index] = song.withSlimparColor(LightColor(hex: "#FF00E5")!, rig: rig)
+        let kept = ScreensFollower.keepingHandColours(from: before, to: edited, rig: rig)
+        #expect(kept.cue(song.id)?.followsScreensBackground == false)
+        #expect(kept.cue(song.id)?.look(for: slimpar).color == edited.cues[index].look(for: slimpar).color)
+        #expect(kept.cues.filter(\.followsScreensBackground).count == before.cues.filter(\.followsScreensBackground).count - 1)
+
+        // A level or a fade changed, not a colour: it keeps matching.
+        var faded = before
+        faded.cues[index].fade += 1
+        #expect(ScreensFollower.keepingHandColours(from: before, to: faded, rig: rig) == faded)
+
+        // Switching matching back on by hand is not a colour change.
+        var on = kept
+        let keptIndex = try #require(on.cues.firstIndex { $0.id == song.id })
+        on.cues[keptIndex].matchesScreens = true
+        #expect(ScreensFollower.keepingHandColours(from: kept, to: on, rig: rig).cue(song.id)?.followsScreensBackground == true)
+    }
+}
