@@ -840,12 +840,15 @@ final class FakeScreens: @unchecked Sendable {
         #expect(show.cue("song1")!.followsScreensBackground)
         #expect(show.cue("song5")!.followsScreensBackground)
         #expect(show.cue("countdown")!.followsScreensBackground)
-        for id in ["walkIn", "announcements", "message", "walkout", "blackout"] {
-            #expect(!show.cue(id)!.followsScreensBackground, "\(id)")
+        // The rest never match, even when an older saved show turned them on.
+        let others = ["walkIn", "announcements", "message", "closing", "walkout", "communion",
+                      "baptism", "custom:Recognition", "blackout"]
+        for id in others {
+            var cue = show.cue(id)!
+            #expect(!cue.canMatchScreens && !cue.followsScreensBackground, "\(id)")
+            cue.matchesScreens = true
+            #expect(!cue.followsScreensBackground, "\(id)")
         }
-        var message = show.cue("message")!
-        message.matchesScreens = true
-        #expect(message.followsScreensBackground)
     }
 
     @Test func matchingKeepsLevels() {

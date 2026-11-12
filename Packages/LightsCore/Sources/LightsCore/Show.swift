@@ -72,9 +72,14 @@ public struct Cue: Codable, Hashable, Identifiable, Sendable {
     /// Screens' song positions: song1, song2…
     public var isSong: Bool { screensPosition?.hasPrefix("song") == true }
 
-    /// Songs match Screens' background unless turned off; walk-in, message
-    /// and the rest keep their own colours unless turned on.
-    public var followsScreensBackground: Bool { matchesScreens ?? isSong }
+    /// Only the songs and the countdown can match Screens' background. The
+    /// walk-in, message, Communion and the rest always keep their own
+    /// colours, whatever an older saved show says.
+    public var canMatchScreens: Bool { isSong || screensPosition == "countdown" }
+
+    /// Songs match Screens' background unless turned off; the countdown only
+    /// when turned on.
+    public var followsScreensBackground: Bool { canMatchScreens && (matchesScreens ?? isSong) }
 
     /// This cue with every SlimPAR group in one colour, levels as they are:
     /// a SlimPAR the cue keeps dark stays dark.

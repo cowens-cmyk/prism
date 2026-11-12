@@ -121,9 +121,12 @@ struct MCPToolTests {
         #expect(cue.name == "Dedications" && cue.note == 62 && cue.fade == 3)
         #expect(control.show.cue("song1")?.note == nil)
 
-        _ = try await call("update_cue", ["cue": "Dedications", "screens_note": .null, "match_screens_background": true])
+        _ = try await call("update_cue", ["cue": "Dedications", "screens_note": .null])
         #expect(control.show.cue("custom:Recognition")?.note == nil)
-        #expect(control.show.cue("custom:Recognition")?.followsScreensBackground == true)
+        #expect(try await call("update_cue", ["cue": "Dedications", "match_screens_background": true]).isError)
+        #expect(control.show.cue("custom:Recognition")?.followsScreensBackground == false)
+        #expect(!(try await call("update_cue", ["cue": "Song 2", "match_screens_background": false]).isError))
+        #expect(control.show.cue("song2")?.followsScreensBackground == false)
         #expect(try await call("update_cue", ["cue": "Dedications", "name": "song 2"]).isError)
     }
 

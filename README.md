@@ -26,9 +26,11 @@ moves.
   included) at the levels the cue sets. A dark or black-and-white
   background leaves the cue's own colour up. It isn't saved into the cue, since
   next week's song has another background; **Keep This Colour** saves it.
-  It's on for the Song cues and the Countdown and off for the rest; it needs
+  It's on for the Song cues and the Countdown, and only those can match: the
+  walk-in, announcements, message, closing, walk-out, Communion, baptisms,
+  Recognition and Blackout keep their own colours. It needs
   Screens' access key in Settings, and the cue says so when it's missing; the switch under "Colour
-  from a slide" changes that per cue, on the live cue at once. A new key or
+  from a slide" turns it off or on for a song or the Countdown, on the live cue at once. A new key or
   address in Settings is used at once too. Go on the song that's already up
   (or Screens sending its note again) keeps Screens' colour. Needs Screens'
   Local API (see below).

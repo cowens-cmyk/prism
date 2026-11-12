@@ -182,8 +182,10 @@ struct PictureCard: View {
 
     var body: some View {
         GlassCard(title: "Colour from a slide", systemImage: "photo.on.rectangle.angled") {
-            screensMatch
-            Divider().opacity(0.4)
+            if cue.canMatchScreens {
+                screensMatch
+                Divider().opacity(0.4)
+            }
             HStack(alignment: .center, spacing: 18) {
                 dropZone
                 VStack(alignment: .leading, spacing: 12) {
@@ -230,7 +232,7 @@ struct PictureCard: View {
     }
 
     /// Songs follow Screens' background by themselves; this turns it off,
-    /// or on for any other cue.
+    /// or on for the countdown. Other cues don't get the switch.
     @ViewBuilder private var screensMatch: some View {
         let follows = model.cue(cue.id)?.followsScreensBackground ?? false
         Toggle(isOn: Binding(

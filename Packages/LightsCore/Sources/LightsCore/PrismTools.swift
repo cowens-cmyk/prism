@@ -194,6 +194,9 @@ public enum PrismTools {
                 var matches: Bool?
                 if let value = arguments["match_screens_background"] {
                     guard let flag = value.boolValue else { throw MCPToolError("match_screens_background is true or false.") }
+                    guard cue.canMatchScreens else {
+                        throw MCPToolError("Only the songs and the countdown can match Screens' background.")
+                    }
                     matches = flag
                 }
                 let previousHolder = note.flatMap { $0 }.flatMap { control.show.cue(forNote: $0) }
