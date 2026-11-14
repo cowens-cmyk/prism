@@ -420,7 +420,7 @@ final class AppModel {
         followingCueID = cueID
         let api = screensAPI
         guard api.isSetUp else {
-            screensProblem = "Prism needs Screens' access key to match: Settings › Songs match Screens' background."
+            screensProblem = "Prism needs Screens' access key to match: Settings › Songs."
             return
         }
         let stale = lastScreensSignature

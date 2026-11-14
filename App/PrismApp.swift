@@ -10,6 +10,7 @@ struct PrismApp: App {
         Window("Prism", id: "main") {
             ContentView(model: delegate.model)
                 .frame(minWidth: 900, minHeight: 600)
+                .modifier(DebugOpenSettings())
         }
         .defaultSize(width: 1240, height: 900)
         .commands {
@@ -85,4 +86,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Closing the window leaves the lights where they are; the Dock icon
     /// brings it back.
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+}
+
+/// Screenshots of Settings without clicking (Debug only): HL_SETTINGS=Lights
+/// opens it on that tab.
+private struct DebugOpenSettings: ViewModifier {
+    @Environment(\.openSettings) private var openSettings
+
+    func body(content: Content) -> some View {
+        #if DEBUG
+        content.task {
+            guard ProcessInfo.processInfo.environment["HL_SETTINGS"] != nil else { return }
+            try? await Task.sleep(for: .seconds(1))
+            openSettings()
+        }
+        #else
+        content
+        #endif
+    }
 }

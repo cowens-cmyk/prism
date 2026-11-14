@@ -54,7 +54,7 @@ moves.
   live cue and Blackout can't be deleted.
 
 The window is dark grey, lit by a gradient of the colours on in the room,
-and fades with the lights. Settings › Look switches to light.
+and fades with the lights. Settings › General switches to light.
 
 Quitting while a cue is up asks first.
 
@@ -95,7 +95,7 @@ Screens 0.28.0; Screens after 0.28.0 also skips a video's black opening):
 
 1. In Screens: **Settings › Integrations › Remote & API**, turn it on.
 2. **Manage Keys…**, create a **Watch** key named Prism.
-3. In Prism: **Settings › Songs match Screens' background**, enter the
+3. In Prism: **Settings › Songs**, enter the
    Screens Mac (`127.0.0.1` on the same Mac, otherwise its address or
    `name.local`) and the key, and press **Check**. The key is kept in the
    keychain.
@@ -127,7 +127,7 @@ The tools are in `PrismTools.swift`; `MCPHost.swift` is the HTTP server.
 ## Updates
 
 Prism checks GitHub Releases (`cowens-cmyk/prism`) at launch and every six
-hours. A newer release shows in the Prism menu and Settings › Updates;
+hours. A newer release shows in the Prism menu and Settings › General;
 **Update** asks first (Later is the default), then downloads it, checks it's
 signed by Hope Church's Developer ID, quits, swaps the app and reopens on the
 cue that was up. Nothing installs by

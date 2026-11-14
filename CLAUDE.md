@@ -24,7 +24,7 @@ user-facing text is short, plain and factual.
 
 - **Never send sACN multicast from a test on a Mac that may be on the
   church's lighting network** — it changes the real lights. Test the app
-  with Settings › Network set to a name that doesn't exist and unicast
+  with Settings › Lights › Network set to a name that doesn't exist and unicast
   `127.0.0.1` (`defaults write org.hopejc.prism network -string none;
   defaults write org.hopejc.prism unicast -string 127.0.0.1`), and listen
   on 127.0.0.1:5568.
@@ -75,7 +75,8 @@ xcodegen generate && xcodebuild -project Prism.xcodeproj -scheme Prism -derivedD
 Keep derived data outside ~/Desktop (iCloud breaks codesign). UI scripting
 isn't allowed on the dev Mac, so Debug builds take launch switches for
 screenshots and tests: `HL_OPEN_COLOR=1` opens the first SlimPAR colour
-picker, `HL_WINDOW=1300x1000` sizes the window, `HL_SCREENS_KEY=…` sets the
+picker, `HL_WINDOW=1300x1000` sizes the window, `HL_SETTINGS=Lights` opens
+Settings on that tab (General, Lights, Screens, Songs, Claude), `HL_SCREENS_KEY=…` sets the
 Screens key without the keychain, `HL_CLAUDE_KEY=…` and `HL_CLAUDE_PORT=…`
 set Claude's key and port the same way. Quitting asks first while a cue is up, so
 a test harness stops the app with `pkill -x "Prism"`.
