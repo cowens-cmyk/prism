@@ -44,7 +44,7 @@ final class AppModel {
     /// Set from Settings when the field is committed, not per keystroke: typing
     /// 10.0.0.150 shouldn't send to 10.0.0.1 and 10.0.0.15 on the way.
     var unicastText: String { didSet { defaults.set(unicastText, forKey: "unicast"); applyNetwork() } }
-    /// The channel Screens sends on (its Lightkey & MIDI setting, 16 by
+    /// The channel Screens sends on (its Prism & MIDI setting, 16 by
     /// default); 0 takes any. A keyboard on another channel playing middle C
     /// must not fire Walk-in.
     var midiChannel: Int { didSet { defaults.set(midiChannel, forKey: "midiChannel") } }

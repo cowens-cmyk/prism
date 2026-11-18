@@ -112,11 +112,11 @@ struct SettingsView: View {
                     .textSelection(.enabled)
             }
             if model.followsScreens, !model.midiStatus.connected.isEmpty, model.lastNote == nil {
-                Text("Screens is connected but hasn't sent a cue. In Screens: Settings › Integrations › Lightkey & MIDI, turn on “Change Lightkey scenes with the service” under Lighting cues. Then present a plan item, or press Send on a row there.")
+                Text("Screens is connected but hasn't sent a cue. In Screens: Settings › Integrations › Prism & MIDI, turn on “Change Prism scenes with the service” under Lighting cues. Then present a plan item, or press Send on a row there.")
                     .font(.callout)
                     .foregroundStyle(.orange)
             }
-            Text("In Screens, open Settings › Integrations › Lightkey & MIDI. Pick This Mac, or Another Mac with the address above. Use the same MIDI channel as here, turn on “Change Lightkey scenes with the service”, and use Add Cue… to add a Recognition row.")
+            Text("In Screens, open Settings › Integrations › Prism & MIDI. Pick This Mac, or Another Mac with the address above. Use the same MIDI channel as here, turn on “Change Prism scenes with the service”, and use Add Cue… to add a Recognition row. Any slide can cue a scene: right-click it › Prism.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

@@ -5,7 +5,7 @@ import LightsCore
 /// Hears the notes Screens sends as the service moves.
 ///
 /// Screens on this Mac sends from a virtual source named "Screens"; Screens
-/// on another Mac joins this Mac's network MIDI session (its Lightkey
+/// on another Mac joins this Mac's network MIDI session (its Prism
 /// settings take this Mac's IP and port). Both are connected here, plus a
 /// "Prism" destination anything else can send to. With "every MIDI
 /// input" on, every source is connected too.
