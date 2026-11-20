@@ -12,7 +12,11 @@ struct CueEditorView: View {
             GlassEffectContainer(spacing: 18) {
                 VStack(spacing: 18) {
                     header
-                    PictureCard(model: model, cue: cue)
+                    // Only Songs 1–5 and the countdown take a colour from a
+                    // picture (Screens' background or one dropped here).
+                    if cue.canMatchScreens {
+                        PictureCard(model: model, cue: cue)
+                    }
                     ForEach(LightGroup.Section.allCases, id: \.self) { section in
                         GlassCard(title: section.rawValue, systemImage: section.symbol) {
                             VStack(spacing: 0) {
@@ -193,17 +197,11 @@ struct PictureCard: View {
     @State private var targeted = false
 
     var body: some View {
-        // Songs 1–5 and the countdown follow Screens; every other cue only
-        // takes a colour from a picture someone drops on it, so it says
-        // nothing about Screens' backgrounds.
-        GlassCard(
-            title: cue.canMatchScreens ? "Screens' background" : "Colour from a picture",
-            systemImage: cue.canMatchScreens ? "play.rectangle.on.rectangle" : "photo.on.rectangle.angled"
-        ) {
-            if cue.canMatchScreens {
-                screensMatch
-                Divider().opacity(0.4)
-            }
+        // Shown only on Songs 1–5 and the countdown; other cues don't take
+        // colours from pictures at all.
+        GlassCard(title: "Screens' background", systemImage: "play.rectangle.on.rectangle") {
+            screensMatch
+            Divider().opacity(0.4)
             HStack(alignment: .center, spacing: 18) {
                 dropZone
                 VStack(alignment: .leading, spacing: 12) {
@@ -223,9 +221,7 @@ struct PictureCard: View {
                             }
                         }
                     } else {
-                        Text(cue.canMatchScreens
-                            ? "Screens' background for this cue shows here once Prism has checked the plan. A picture or video dropped here puts its colour on the SlimPARs too."
-                            : "Drop a picture or a video, and the SlimPARs take its colour.")
+                        Text("Screens' background for this cue shows here once Prism has checked the plan. A picture or video dropped here puts its colour on the SlimPARs too.")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -252,7 +248,7 @@ struct PictureCard: View {
     }
 
     /// Songs follow Screens' background by themselves; this turns it off,
-    /// or on for the countdown. Other cues don't get the switch.
+    /// or on for the countdown.
     @ViewBuilder private var screensMatch: some View {
         let follows = model.cue(cue.id)?.followsScreensBackground ?? false
         Toggle(isOn: Binding(

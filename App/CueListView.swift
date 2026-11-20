@@ -103,7 +103,7 @@ struct CueRow: View {
         .animation(.easeInOut(duration: 0.25), value: isLive)
         .contentShape(Rectangle())
         .listRowBackground(dropTargeted ? Theme.accent.opacity(0.3) : nil)
-        .onDrop(of: PictureDrop.types, isTargeted: $dropTargeted) { providers in
+        .onDrop(of: cue.canMatchScreens ? PictureDrop.types : [], isTargeted: $dropTargeted) { providers in
             PictureDrop.load(providers) { url in
                 await model.applyPicture(at: url, to: cue.id)
             }

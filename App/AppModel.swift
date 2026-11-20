@@ -301,9 +301,11 @@ final class AppModel {
     private(set) var pictureMessage: (cueID: String, text: String)?
 
     /// A picture or video dropped on a cue: its colours go on the cue, the
-    /// strongest on every SlimPAR group.
+    /// strongest on every SlimPAR group. Only Songs 1–5 and the countdown
+    /// take one; other cues keep the colours set by hand.
     func applyPicture(at url: URL, to cueID: String) async {
         pictureMessage = nil
+        guard cue(cueID)?.canMatchScreens == true else { return }
         guard let image = await ImagePalette.picture(at: url) else {
             pictureMessage = (cueID, "Couldn't read “\(url.lastPathComponent)” as a picture or video.")
             return

@@ -24,8 +24,9 @@ moves.
 - **Colour:** click a group's swatch for the church's colours, type a hex
   value (`#FF00E5`), or use More for the system colour picker. "Use on all
   SlimPARs" copies the colour to all three SlimPAR groups.
-- **Colour from a picture:** drop a picture or a video on a cue, in the
-  list or on its drop box. The SlimPARs take its
+- **Colour from a picture:** Songs 1–5 and the countdown only. Drop a
+  picture or a video on one of them, in the list or on its drop box. Other
+  cues have no picture box and ignore drops. The SlimPARs take its
   strongest colour, and the colours found in it appear beside the picture;
   click another one to use it instead.
 - **Songs match Screens:** while a matching cue is live, the SlimPARs take
