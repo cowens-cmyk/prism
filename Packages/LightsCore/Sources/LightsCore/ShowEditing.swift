@@ -109,7 +109,7 @@ extension Show {
     public mutating func applyMatchingDefaults() {
         for index in cues.indices {
             let cue = cues[index]
-            cues[index].matchesScreens = cue.isSong || cue.screensPosition == "countdown" ? true : nil
+            cues[index].matchesScreens = cue.canMatchScreens ? true : nil
         }
     }
 

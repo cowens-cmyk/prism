@@ -18,6 +18,9 @@ struct PrismApp: App {
                 Button(AppUpdater.shared.available.map { "Update to Prism \($0.version)…" } ?? "Check for Updates…") {
                     Task { await AppUpdater.shared.check(userInitiated: true) }
                 }
+                Button("Install Previous Version…") {
+                    Task { await AppUpdater.shared.choosePreviousVersion() }
+                }
             }
             CommandGroup(replacing: .newItem) {
                 Button("New Cue") { delegate.model.addCue() }

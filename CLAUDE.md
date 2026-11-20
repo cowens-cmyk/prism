@@ -82,7 +82,14 @@ set Claude's key and port the same way. Quitting asks first while a cue is up, s
 a test harness stops the app with `pkill -x "Prism"`.
 
 Song matching needs Screens' `GET /v1/show/frames/background` (Screens
-after 0.27.0, `LocalAPIBridgeAdapter.liveBackgroundJPEG`).
+after 0.27.0, `LocalAPIBridgeAdapter.liveBackgroundJPEG`). The 5-minute plan
+check (`ScreensBackgroundSync`, `AppModel.checkBackgrounds`) needs
+`GET /v1/lighting/backgrounds` (the open plan's position → background media
+id) and `GET /v1/media/{id}/poster`; the media id last taken per position is
+in the `screensBackgrounds` default. Its edits go through
+`edit(byHand: false)` so they don't count as a hand-picked colour, and it
+never touches the live cue. Only `Cue.matchingPositions` (song1–song5,
+countdown) can match.
 
 To test against the real Screens without touching the church library or
 your phone-remote key, run Screens' Debug build with

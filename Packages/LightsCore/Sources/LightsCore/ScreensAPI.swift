@@ -23,6 +23,9 @@ public struct ScreensAPI: Sendable, Equatable {
 
     public enum Failure: Error, Equatable, Sendable {
         case notSetUp, unreachable, refused, noBackground, unreadable
+        /// Screens doesn't have the route yet (before it shared songs'
+        /// backgrounds ahead of time).
+        case outdated
 
         /// What Settings says about it.
         public var message: String {
@@ -32,6 +35,7 @@ public struct ScreensAPI: Sendable, Equatable {
             case .refused: "Screens refused the access key."
             case .noBackground: "Screens has no background up right now."
             case .unreadable: "Screens sent something that isn't a picture."
+            case .outdated: "Update Screens to check songs' backgrounds ahead of time."
             }
         }
     }
@@ -102,8 +106,60 @@ public struct ScreensAPI: Sendable, Equatable {
         return slidePart + "|" + mediaPart
     }
 
+    /// The plan open in Screens, with each lighting position's background:
+    /// what a song or the countdown will put up, before it goes live.
+    public func lightingBackgrounds(session: URLSession = .shared) async -> Result<LightingBackgrounds, Failure> {
+        await get("/v1/lighting/backgrounds", session: session)
+            .mapError { $0 == .noBackground ? .outdated : $0 }
+            .flatMap { data in
+                guard let plan = try? JSONDecoder().decode(LightingBackgrounds.self, from: data) else {
+                    return .failure(.unreadable)
+                }
+                return .success(plan)
+            }
+    }
+
+    /// A small JPEG of one background in Screens' library, the same picture
+    /// the live background gives when it's up.
+    public func poster(mediaID: String, session: URLSession = .shared) async -> Result<Data, Failure> {
+        guard let id = mediaID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(["/"])) else {
+            return .failure(.noBackground)
+        }
+        return await get("/v1/media/\(id)/poster", session: session)
+    }
+
     /// Whether Screens answers with this key.
     public func check(session: URLSession = .shared) async -> Result<Void, Failure> {
         await get("/v1/status", session: session).map { _ in () }
+    }
+}
+
+/// GET /v1/lighting/backgrounds: the plan open in Screens and, for each
+/// lighting position in it, the background its item starts on.
+public struct LightingBackgrounds: Codable, Equatable, Sendable {
+    public struct Position: Codable, Equatable, Sendable {
+        /// "song1", "countdown": the same keys as a cue's screensPosition.
+        public var position: String
+        public var itemId: String?
+        public var itemName: String?
+        /// The background's media id; nil when the item has none.
+        public var mediaId: String?
+
+        public init(position: String, itemId: String? = nil, itemName: String? = nil, mediaId: String?) {
+            self.position = position
+            self.itemId = itemId
+            self.itemName = itemName
+            self.mediaId = mediaId
+        }
+    }
+
+    public var serviceId: String?
+    public var serviceName: String?
+    public var positions: [Position]
+
+    public init(serviceId: String?, serviceName: String?, positions: [Position]) {
+        self.serviceId = serviceId
+        self.serviceName = serviceName
+        self.positions = positions
     }
 }

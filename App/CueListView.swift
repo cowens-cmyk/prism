@@ -55,15 +55,10 @@ struct CueRow: View {
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(spacing: 6) {
-                    if isLive {
-                        Circle()
-                            .fill(Theme.live)
-                            .frame(width: 7, height: 7)
-                            .shadow(color: Theme.live, radius: 4)
-                    }
                     Text(cue.displayName)
-                        .font(.system(.body, design: .rounded).weight(isLive ? .bold : .medium))
+                        .font(.system(isLive ? .title3 : .body, design: .rounded).weight(isLive ? .heavy : .medium))
                         .lineLimit(1)
+                    if isLive { LiveTag() }
                 }
                 ColorStrip(colors: cue.colors(in: model.rig), height: 4)
                     .frame(maxWidth: 120)
@@ -87,7 +82,25 @@ struct CueRow: View {
             .tint(isLive ? Theme.live : nil)
             .help("Go to \(cue.name)")
         }
-        .padding(.vertical, 5)
+        .padding(.vertical, isLive ? 8 : 5)
+        .padding(.leading, isLive ? 6 : 0)
+        // Drawn in the row itself, so it shows whether or not the row is
+        // selected: the live cue is the one thing the operator must find at
+        // a glance.
+        .background {
+            if isLive {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Theme.live.opacity(0.2))
+                    .overlay(alignment: .leading) {
+                        UnevenRoundedRectangle(topLeadingRadius: 10, bottomLeadingRadius: 10)
+                            .fill(Theme.live)
+                            .frame(width: 5)
+                    }
+                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(Theme.live, lineWidth: 1.5))
+                    .padding(.horizontal, -6)
+            }
+        }
+        .animation(.easeInOut(duration: 0.25), value: isLive)
         .contentShape(Rectangle())
         .listRowBackground(dropTargeted ? Theme.accent.opacity(0.3) : nil)
         .onDrop(of: PictureDrop.types, isTargeted: $dropTargeted) { providers in

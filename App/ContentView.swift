@@ -33,6 +33,9 @@ struct ContentView: View {
             AmbientBackground(glows: model.ambientGlows, fade: model.ambientFade)
         }
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                LiveNow(model: model)
+            }
             ToolbarItem(placement: .status) {
                 OutputStatus(model: model)
             }
@@ -48,6 +51,33 @@ struct ContentView: View {
         }
         .tint(Theme.accent)
         .preferredColorScheme(model.colorScheme)
+    }
+}
+
+/// The cue in the room, always in the toolbar; clicking it shows it.
+struct LiveNow: View {
+    var model: AppModel
+
+    var body: some View {
+        if let live = model.cue(model.liveCueID) {
+            Button {
+                model.selectedCueID = live.id
+            } label: {
+                HStack(spacing: 8) {
+                    LiveTag()
+                    Text(live.displayName)
+                        .font(.system(.headline, design: .rounded).weight(.bold))
+                    ColorStrip(colors: live.colors(in: model.rig), height: 5)
+                        .frame(width: 44)
+                }
+                .padding(.horizontal, 6)
+            }
+            .help("Show the live cue")
+        } else {
+            Text("Nothing live")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+        }
     }
 }
 

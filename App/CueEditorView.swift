@@ -49,7 +49,7 @@ struct CueEditorView: View {
     private var isLive: Bool { model.liveCueID == cue.id }
 
     private var header: some View {
-        GlassCard {
+        GlassCard(tint: isLive ? Theme.live : nil) {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .center, spacing: 14) {
                     VStack(alignment: .leading, spacing: 8) {
@@ -64,9 +64,7 @@ struct CueEditorView: View {
                             .frame(maxWidth: 260)
                     }
                     Spacer(minLength: 12)
-                    if isLive {
-                        GlassPill(text: "LIVE", systemImage: "dot.radiowaves.left.and.right", tint: Theme.live)
-                    }
+                    if isLive { LiveTag(large: true) }
                     Button {
                         model.go(cue)
                     } label: {
@@ -80,12 +78,26 @@ struct CueEditorView: View {
                     .controlSize(.large)
                     .help("Fade to this cue (⌘↩)")
                 }
-                if !isLive {
+                if isLive {
+                    Text("In the room now. Changes here show at once.")
+                        .font(.callout.weight(.medium))
+                        .foregroundStyle(Theme.live)
+                } else {
                     // Otherwise moving a slider here and seeing nothing in the
                     // room looks like a fault.
-                    Text("Not live. Changes show in the room after Go.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Text("Not live. Changes show in the room after Go.")
+                            .foregroundStyle(.secondary)
+                        if let live = model.cue(model.liveCueID) {
+                            Text("Live now:")
+                                .foregroundStyle(.secondary)
+                            Button(live.displayName) { model.selectedCueID = live.id }
+                                .buttonStyle(.link)
+                                .foregroundStyle(Theme.live)
+                                .help("Show the live cue")
+                        }
+                    }
+                    .font(.callout)
                 }
                 Divider().opacity(0.4)
                 ViewThatFits(in: .horizontal) {
@@ -181,7 +193,13 @@ struct PictureCard: View {
     @State private var targeted = false
 
     var body: some View {
-        GlassCard(title: "Colour from a slide", systemImage: "photo.on.rectangle.angled") {
+        // Songs 1–5 and the countdown follow Screens; every other cue only
+        // takes a colour from a picture someone drops on it, so it says
+        // nothing about Screens' backgrounds.
+        GlassCard(
+            title: cue.canMatchScreens ? "Screens' background" : "Colour from a picture",
+            systemImage: cue.canMatchScreens ? "play.rectangle.on.rectangle" : "photo.on.rectangle.angled"
+        ) {
             if cue.canMatchScreens {
                 screensMatch
                 Divider().opacity(0.4)
@@ -205,7 +223,9 @@ struct PictureCard: View {
                             }
                         }
                     } else {
-                        Text("Drop a worship background or sermon slide, a picture or a video, and the SlimPARs take its colour.")
+                        Text(cue.canMatchScreens
+                            ? "Screens' background for this cue shows here once Prism has checked the plan. A picture or video dropped here puts its colour on the SlimPARs too."
+                            : "Drop a picture or a video, and the SlimPARs take its colour.")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -245,7 +265,7 @@ struct PictureCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Match Screens' background")
                     .font(.body.weight(.medium))
-                Text("When Screens starts this cue, the SlimPARs take the colour of the song's background. The levels stay as set here.")
+                Text("The SlimPARs take the colour of this item's background in Screens, checked every 5 minutes and again when it goes live. The levels stay as set here.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -270,6 +290,13 @@ struct PictureCard: View {
             Label(problem, systemImage: "exclamationmark.triangle.fill")
                 .font(.callout)
                 .foregroundStyle(.orange)
+        } else if follows, let check = model.backgroundCheck {
+            Label(
+                "Plan checked \(check.at.formatted(date: .omitted, time: .shortened)). \(check.text)",
+                systemImage: check.ok ? "checkmark.circle" : "exclamationmark.triangle.fill")
+                .font(.caption)
+                .foregroundStyle(check.ok ? Color.secondary : Color.orange)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 

@@ -67,6 +67,8 @@ struct AmbientBackground: View {
 struct GlassCard<Content: View>: View {
     var title: String?
     var systemImage: String?
+    /// Tints the glass and rings it: the live cue's header is green.
+    var tint: Color? = nil
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -82,7 +84,32 @@ struct GlassCard<Content: View>: View {
         }
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .glassEffect(.regular, in: .rect(cornerRadius: 24))
+        .glassEffect(.regular.tint(tint?.opacity(0.28)), in: .rect(cornerRadius: 24))
+        .overlay {
+            if let tint {
+                RoundedRectangle(cornerRadius: 24).strokeBorder(tint.opacity(0.9), lineWidth: 2)
+            }
+        }
+    }
+}
+
+/// The LIVE tag on the cue that's in the room.
+struct LiveTag: View {
+    var large = false
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "dot.radiowaves.left.and.right")
+                .symbolEffect(.pulse, options: .repeating)
+            Text("LIVE")
+        }
+        .font(large ? .callout.weight(.heavy) : .caption2.weight(.heavy))
+        .foregroundStyle(.black)
+        .padding(.horizontal, large ? 10 : 6)
+        .padding(.vertical, large ? 4 : 2)
+        .background(Capsule().fill(Theme.live))
+        .shadow(color: Theme.live.opacity(0.7), radius: 6)
+        .accessibilityLabel("Live")
     }
 }
 

@@ -146,6 +146,7 @@ final class AppModel {
         }
         watchNetworks()
         applyClaude()
+        startBackgroundChecks()
         // The show file on the Desktop is there from the first launch, not
         // only once something has been changed.
         saveNow()
@@ -205,12 +206,14 @@ final class AppModel {
 
     /// Every change to the show comes through here: saved shortly after, and
     /// shown in the room at once when it touches the live cue.
-    private func edit(_ change: (inout Show) -> Void) {
+    /// `byHand` false is Prism's own change (Screens' background put into a
+    /// cue), which mustn't count as a colour the operator picked.
+    private func edit(byHand: Bool = true, _ change: (inout Show) -> Void) {
         var next = show
         change(&next)
         guard next != show else { return }
         // A colour picked for a matching cue stays picked.
-        next = ScreensFollower.keepingHandColours(from: show, to: next, rig: rig)
+        if byHand { next = ScreensFollower.keepingHandColours(from: show, to: next, rig: rig) }
         let liveBefore = show.cue(liveCueID)
         show = next
         if let live = show.cue(liveCueID), live != liveBefore {
@@ -369,19 +372,19 @@ final class AppModel {
     var screensHost: String {
         didSet {
             defaults.set(screensHost, forKey: "screensHost")
-            if screensHost != oldValue { restartScreens() }
+            if screensHost != oldValue { restartScreens(); checkBackgroundsSoon() }
         }
     }
     var screensPort: Int {
         didSet {
             defaults.set(screensPort, forKey: "screensPort")
-            if screensPort != oldValue { restartScreens() }
+            if screensPort != oldValue { restartScreens(); checkBackgroundsSoon() }
         }
     }
     var screensKey: String {
         didSet {
             Keychain.write(screensKey)
-            if screensKey != oldValue { restartScreens() }
+            if screensKey != oldValue { restartScreens(); checkBackgroundsSoon() }
         }
     }
     var screensAPI: ScreensAPI { ScreensAPI(host: screensHost, port: screensPort, key: screensKey) }
@@ -489,6 +492,105 @@ final class AppModel {
             show.replace(cue.withSlimparColor(color, rig: rig))
         }
         screensColor = nil
+    }
+
+    // MARK: Screens' plan
+
+    /// What the last look at Screens' plan found, for Settings and the cue.
+    private(set) var backgroundCheck: (at: Date, text: String, ok: Bool)?
+    @ObservationIgnored private var backgroundTask: Task<Void, Never>?
+    /// Position → the Screens media id its cue last took a colour from.
+    private static let seenBackgroundsKey = "screensBackgrounds"
+
+    /// Every five minutes, and soon after launch or a new Screens address
+    /// or key: see ScreensBackgroundSync.
+    private func startBackgroundChecks(after delay: Double = 5) {
+        backgroundTask?.cancel()
+        backgroundTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            while !Task.isCancelled {
+                await self?.checkBackgrounds()
+                try? await Task.sleep(for: .seconds(ScreensBackgroundSync.interval))
+            }
+        }
+    }
+
+    /// Typing a key or address restarts the wait, so the check runs once
+    /// typing has stopped rather than on every character.
+    private func checkBackgroundsSoon() { startBackgroundChecks(after: 3) }
+
+    /// Settings' Check Now button.
+    func checkBackgroundsNow() { startBackgroundChecks(after: 0) }
+
+    private func checkBackgrounds() async {
+        let api = screensAPI
+        guard api.isSetUp else {
+            backgroundCheck = (Date(), "Needs Screens' access key.", false)
+            return
+        }
+        let wanted = Set(show.cues.filter(\.followsScreensBackground).compactMap(\.screensPosition))
+        guard !wanted.isEmpty else {
+            backgroundCheck = (Date(), "No cue matches Screens' background.", true)
+            return
+        }
+        let seen = defaults.dictionary(forKey: Self.seenBackgroundsKey) as? [String: String] ?? [:]
+        switch await ScreensBackgroundSync(api: api).check(positions: wanted, seen: seen) {
+        case .failure(let failure):
+            backgroundCheck = (Date(), failure.message, false)
+        case .success(let result):
+            var changed: [String] = []
+            var held: [String] = []
+            var unreadable = 0
+            var nowSeen = seen
+            for update in result.updates {
+                switch takeBackground(update) {
+                case .taken(let names): changed += names; nowSeen[update.position] = update.mediaID
+                case .live(let names): held += names
+                case .none: nowSeen[update.position] = update.mediaID
+                case .unreadable: unreadable += 1
+                }
+            }
+            defaults.set(nowSeen, forKey: Self.seenBackgroundsKey)
+            let plan = result.planName.map { "“\($0)”" } ?? "Screens' plan"
+            var text = changed.isEmpty
+                ? "\(plan): no background changes."
+                : "\(plan): \(changed.joined(separator: ", ")) now \(changed.count == 1 ? "matches its" : "match their") new background."
+            if !held.isEmpty {
+                text += " \(held.joined(separator: ", ")) is live; it changes after it's done."
+            }
+            let failed = result.failed.count + unreadable
+            if failed > 0 {
+                text += " Couldn't get the background for \(failed == 1 ? "one cue" : "\(failed) cues"); trying again in 5 minutes."
+            }
+            backgroundCheck = (Date(), text, failed == 0)
+        }
+    }
+
+    private enum Taken { case taken([String]), live([String]), none, unreadable }
+
+    /// Puts a new background into each cue on its position: the picture,
+    /// its colours and, unless it's dark, its colour on the SlimPARs. The
+    /// live cue is left until it's done, so nothing changes in the room
+    /// mid-song: Screens' follower has the live one, and this cue gets the
+    /// colour on the next check.
+    private func takeBackground(_ update: ScreensBackgroundSync.Update) -> Taken {
+        let cues = show.cues.filter { $0.screensPosition == update.position && $0.followsScreensBackground }
+        guard !cues.isEmpty else { return .none }
+        if cues.contains(where: { $0.id == liveCueID }) { return .live(cues.map(\.displayName)) }
+        guard case .success(let image) = ScreensAPI.image(from: update.jpeg) else { return .unreadable }
+        let stored = try? store.storeImage(image)
+        let palette = ImagePalette.colors(in: image)
+        edit(byHand: false) { show in
+            for cue in cues {
+                guard var edited = show.cue(cue.id) else { continue }
+                edited.image = stored ?? edited.image
+                edited.palette = palette
+                if let color = update.color { edited = edited.withSlimparColor(color, rig: rig) }
+                show.replace(edited)
+            }
+        }
+        store.removeUnusedImages(keeping: show)
+        return .taken(cues.map(\.displayName))
     }
 
     // MARK: Claude

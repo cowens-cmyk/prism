@@ -14,15 +14,18 @@ moves.
   Desktop folder.
 
 - **Go to a cue:** click ▶ next to it, or select it and press **Go** (⌘↩).
-  The live cue is marked LIVE, and the right side switches to it whenever a
-  cue goes up, from Screens or by hand.
+  The live cue is hard to miss: its row in the list is outlined in green
+  with a pulsing LIVE tag, its header on the right turns green, and the
+  toolbar always names it (click the name to show it). The right side
+  switches to it whenever a cue goes up, from Screens or by hand; while
+  you look at another cue, its header names the live one.
 - **Change a cue:** select it, then set each group's colour and brightness.
   If the cue is live, the room changes as you drag.
 - **Colour:** click a group's swatch for the church's colours, type a hex
   value (`#FF00E5`), or use More for the system colour picker. "Use on all
   SlimPARs" copies the colour to all three SlimPAR groups.
-- **Colour from a slide:** drop a worship background or sermon slide (a picture or
-  a video) on a cue, in the list or on its drop box. The SlimPARs take its
+- **Colour from a picture:** drop a picture or a video on a cue, in the
+  list or on its drop box. The SlimPARs take its
   strongest colour, and the colours found in it appear beside the picture;
   click another one to use it instead.
 - **Songs match Screens:** while a matching cue is live, the SlimPARs take
@@ -37,14 +40,25 @@ moves.
   so the colour is still there the next time it goes up instead of going
   back to Screens' background. The cue's **Match Screens' background**
   switch turns it on again.
-  It's on for the Song cues and the Countdown, and only those can match: the
-  walk-in, announcements, message, closing, walk-out, Communion, baptisms,
-  Recognition and Blackout keep their own colours. It needs
-  Screens' access key in Settings, and the cue says so when it's missing; the switch under "Colour
-  from a slide" turns it off or on for a song or the Countdown, on the live cue at once. A new key or
+  It's on for Songs 1–5 and the Countdown, and only those six can match
+  (and only they show the "Screens' background" card): the walk-in,
+  announcements, message, closing, walk-out, Communion, baptisms,
+  Recognition, a Song 6 and Blackout keep their own colours. It needs
+  Screens' access key in Settings, and the cue says so when it's missing;
+  the switch on the "Screens' background" card turns it off or on, on the
+  live cue at once. A new key or
   address in Settings is used at once too. Go on the song that's already up
   (or Screens sending its note again) keeps Screens' colour. Needs Screens'
   Local API (see below).
+- **Background changes in the plan:** every 5 minutes (and soon after
+  launch or a new key) Prism asks Screens which background each song and
+  the countdown in the open plan starts on. When one has changed since the
+  last look, that cue takes the new background's picture and colour, so it
+  goes up matching instead of starting on the old one. A dark background
+  updates the picture but leaves the colour. The live cue waits until it's
+  done, so nothing changes mid-song. Settings › Songs shows the last check
+  and has **Check Now**. Needs Screens with `GET /v1/lighting/backgrounds`;
+  an older Screens gets "Update Screens…".
 - **Fade:** how long the cue takes to come up from whatever was showing.
 - **Blackout:** the moon button in the toolbar (⇧⌘B) turns everything off
   at once, with no fade.
@@ -131,7 +145,15 @@ hours. A newer release shows in the Prism menu and Settings › General;
 **Update** asks first (Later is the default), then downloads it, checks it's
 signed by Hope Church's Developer ID, quits, swaps the app and reopens on the
 cue that was up. Nothing installs by
-itself. To release: bump `MARKETING_VERSION` in `project.yml`, commit, and
+itself.
+
+**Install Previous Version…** (under Check for Updates in the Prism menu,
+and Previous Version… in Settings › General) lists every older release on
+GitHub, newest first, and installs the one picked the same way, after
+asking. The show and settings stay. An automatic check afterwards only says
+a newer one is out, so the older version stays until someone updates.
+Every version is on GitHub. 0.1.0–0.2.1 came before updates, so the menu
+doesn't offer them: installed by hand, they'd never update again. To release: bump `MARKETING_VERSION` in `project.yml`, commit, and
 run `scripts/release-dmg.sh --publish`.
 
 ## The rig

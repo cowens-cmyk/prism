@@ -72,10 +72,14 @@ public struct Cue: Codable, Hashable, Identifiable, Sendable {
     /// Screens' song positions: song1, song2…
     public var isSong: Bool { screensPosition?.hasPrefix("song") == true }
 
-    /// Only the songs and the countdown can match Screens' background. The
-    /// walk-in, message, Communion and the rest always keep their own
-    /// colours, whatever an older saved show says.
-    public var canMatchScreens: Bool { isSong || screensPosition == "countdown" }
+    /// The positions that can match Screens' background: Songs 1–5 and the
+    /// countdown.
+    public static let matchingPositions: Set<String> = ["song1", "song2", "song3", "song4", "song5", "countdown"]
+
+    /// Only Songs 1–5 and the countdown can match Screens' background. The
+    /// walk-in, message, Communion, a Song 6 and the rest always keep their
+    /// own colours, whatever an older saved show says.
+    public var canMatchScreens: Bool { screensPosition.map(Self.matchingPositions.contains) ?? false }
 
     /// Songs match Screens' background unless turned off; the countdown only
     /// when turned on.

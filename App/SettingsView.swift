@@ -150,6 +150,23 @@ struct SettingsView: View {
             Text("In Screens: Settings › Integrations › Remote & API. Turn it on, then Manage Keys… and create a Watch key for Prism. Use 127.0.0.1 when Screens runs on this Mac.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            LabeledContent("Plan check") {
+                HStack {
+                    if let check = model.backgroundCheck {
+                        Text("\(check.at.formatted(date: .omitted, time: .shortened)): \(check.text)")
+                            .font(.callout)
+                            .foregroundStyle(check.ok ? Color.secondary : Color.orange)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } else {
+                        Text("Not yet").foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button("Check Now") { model.checkBackgroundsNow() }
+                }
+            }
+            Text("Every 5 minutes Prism looks at the plan open in Screens. When a song's or the countdown's background has changed, that cue takes the new background's colour, so it goes up matching. A cue that's live changes once it's done.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -196,12 +213,13 @@ struct SettingsView: View {
                 } else {
                     Button("Check Now") { Task { await updater.check(userInitiated: true) } }
                 }
+                Button("Previous Version…") { Task { await updater.choosePreviousVersion() } }
                 if updater.isWorking { ProgressView().controlSize(.small) }
                 if let status = updater.status {
                     Text(status).font(.callout).foregroundStyle(.secondary)
                 }
             }
-            Text("Version \(updater.currentVersion). Updating quits Prism and reopens it on the cue that was up; do it outside a service.")
+            Text("Version \(updater.currentVersion). Updating quits Prism and reopens it on the cue that was up; do it outside a service. Previous Version… puts an earlier release back if a new one misbehaves.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
