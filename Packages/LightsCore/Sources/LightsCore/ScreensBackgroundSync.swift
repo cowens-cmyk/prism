@@ -4,14 +4,14 @@ import Foundation
 /// open in Screens. The live follower only sees a background once it's on
 /// screen, so a song whose background was swapped in Screens went up in the
 /// old background's colour and held it whenever the follower had nothing to
-/// change it to (a dark background, Screens slow to answer). Every few
-/// minutes this asks Screens which background each position starts on, and
+/// change it to (a dark background, Screens slow to answer). Every
+/// minute this asks Screens which background each position starts on, and
 /// when one has changed since it last looked, hands back the new picture and
 /// colour for the cue to keep.
 public struct ScreensBackgroundSync: Sendable {
     /// How often Prism asks: often enough that a background swapped during
     /// the week, or just before the service, is in the cue before it goes up.
-    public static let interval: Double = 5 * 60
+    public static let interval: Double = 60
 
     public struct Update: Equatable, Sendable {
         public var position: String

@@ -164,7 +164,7 @@ struct SettingsView: View {
                     Button("Check Now") { model.checkBackgroundsNow() }
                 }
             }
-            Text("Every 5 minutes Prism looks at the plan open in Screens. When a song's or the countdown's background has changed, that cue takes the new background's colour, so it goes up matching. A cue that's live changes once it's done.")
+            Text("Every minute Prism looks at the plan open in Screens. When a song's or the countdown's background has changed, that cue takes the new background's colour, so it goes up matching. A cue that's live changes once it's done.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

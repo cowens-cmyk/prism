@@ -51,7 +51,7 @@ moves.
   address in Settings is used at once too. Go on the song that's already up
   (or Screens sending its note again) keeps Screens' colour. Needs Screens'
   Local API (see below).
-- **Background changes in the plan:** every 5 minutes (and soon after
+- **Background changes in the plan:** every minute (and soon after
   launch or a new key) Prism asks Screens which background each song and
   the countdown in the open plan starts on. When one has changed since the
   last look, that cue takes the new background's picture and colour, so it

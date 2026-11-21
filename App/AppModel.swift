@@ -504,7 +504,7 @@ final class AppModel {
     /// Position → the Screens media id its cue last took a colour from.
     private static let seenBackgroundsKey = "screensBackgrounds"
 
-    /// Every five minutes, and soon after launch or a new Screens address
+    /// Every minute, and soon after launch or a new Screens address
     /// or key: see ScreensBackgroundSync.
     private func startBackgroundChecks(after delay: Double = 5) {
         backgroundTask?.cancel()
@@ -562,7 +562,7 @@ final class AppModel {
             }
             let failed = result.failed.count + unreadable
             if failed > 0 {
-                text += " Couldn't get the background for \(failed == 1 ? "one cue" : "\(failed) cues"); trying again in 5 minutes."
+                text += " Couldn't get the background for \(failed == 1 ? "one cue" : "\(failed) cues"); trying again in a minute."
             }
             backgroundCheck = (Date(), text, failed == 0)
         }

@@ -261,7 +261,7 @@ struct PictureCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Match Screens' background")
                     .font(.body.weight(.medium))
-                Text("The SlimPARs take the colour of this item's background in Screens, checked every 5 minutes and again when it goes live. The levels stay as set here.")
+                Text("The SlimPARs take the colour of this item's background in Screens, checked every minute and again when it goes live. The levels stay as set here.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
